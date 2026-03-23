@@ -57,6 +57,22 @@ FAN_PATTERNS = [
     ("2510", [r"\b2510\b"]),
 ]
 
+PART_COOLING_CONTEXT_PATTERNS = [
+    r"\bpart\s*cool(?:ing)?\b",
+    r"\bblower\b",
+    r"\bcpap\b",
+    r"\bduct\b",
+    r"\bradial\b",
+]
+
+HOTEND_CONTEXT_PATTERNS = [
+    r"\bhot\s*end\b",
+    r"\bhotend\b",
+    r"\bheatsink\b",
+    r"\bheat\s*break\b",
+    r"\baxial\b",
+]
+
 FILAMENT_CUTTER_PATTERNS = [
     r"\bfilament\s*cutter\b",
     r"\bcutter\b.{0,24}\bfilament\b",
@@ -350,26 +366,66 @@ def parse_temp_file(temp_path):
     return result
 
 
+def _is_part_cooling_context(local_text):
+    return any(
+        re.search(pattern, local_text, flags=re.IGNORECASE)
+        for pattern in PART_COOLING_CONTEXT_PATTERNS
+    )
+
+
+def _is_hotend_context(local_text):
+    return any(
+        re.search(pattern, local_text, flags=re.IGNORECASE)
+        for pattern in HOTEND_CONTEXT_PATTERNS
+    )
+
+
 def find_fans(text):
-    """Find fan support mentions with line-level source tracking."""
-    found = []
-    sources = {}
+    """Find hotend and part-cooling fan mentions with source tracking."""
+    hotend_fans = []
+    part_cooling_fans = []
+    hotend_sources = {}
+    part_cooling_sources = {}
+
     for line in text.splitlines():
         line_lower = line.lower()
-        context_is_fan = any(word in line_lower for word in ["fan", "blower", "cpap"])
+        context_is_fan = any(word in line_lower for word in ["fan", "blower", "cpap", "axial"])
 
         for canonical, patterns in FAN_PATTERNS:
-            if canonical in found:
-                continue
             for pattern in patterns:
-                if re.search(pattern, line, flags=re.IGNORECASE):
+                for match in re.finditer(pattern, line, flags=re.IGNORECASE):
                     # For numeric fan sizes, require some fan context on the line.
                     if canonical != "CPAP" and not context_is_fan:
                         continue
-                    found.append(canonical)
-                    sources[canonical] = line.strip()
+
+                    start = max(0, match.start() - 48)
+                    end = min(len(line), match.end() + 48)
+                    local_context = line[start:end]
+
+                    is_part = _is_part_cooling_context(local_context)
+                    is_hotend = _is_hotend_context(local_context)
+
+                    if is_part and canonical not in part_cooling_fans:
+                        part_cooling_fans.append(canonical)
+                        part_cooling_sources[canonical] = line.strip()
+
+                    if is_hotend and canonical not in hotend_fans:
+                        hotend_fans.append(canonical)
+                        hotend_sources[canonical] = line.strip()
+
+                    # CPAP should map to part cooling when no explicit context is present.
+                    if canonical == "CPAP" and not is_part and not is_hotend:
+                        if canonical not in part_cooling_fans:
+                            part_cooling_fans.append(canonical)
+                            part_cooling_sources[canonical] = line.strip()
+
+                    # If no specific context is present for a non-CPAP fan, ignore it.
                     break
-    return found, sources
+                else:
+                    continue
+                break
+
+    return hotend_fans, part_cooling_fans, hotend_sources, part_cooling_sources
 
 
 def find_filament_cutter_source(text):
@@ -385,6 +441,13 @@ def find_new_simple(found_items, existing_value):
     """Find new items without alias-canonical lookup."""
     existing_norm = normalize_field(existing_value)
     return [item for item in found_items if item.lower() not in existing_norm]
+
+
+def get_existing_fan_field(toolhead, plural_key, singular_key):
+    """Read fan data from either plural or singular schema keys."""
+    if plural_key in toolhead:
+        return toolhead.get(plural_key), plural_key
+    return toolhead.get(singular_key), singular_key
 
 
 # ── Text matching ──────────────────────────────────────────────────────────────
@@ -504,6 +567,7 @@ def run_scan(recheck=False, log=print):
     Returns:
         A list of dicts, one per toolhead with updates.  Each dict has:
             name, new_extruders, new_hotends, new_probes, new_boards,
+            new_hotend_fans, new_part_cooling_fans,
             sources  (item -> readme line),
             updated  (full merged toolhead dict).
         Returns an empty list when nothing changed.
@@ -555,7 +619,7 @@ def run_scan(recheck=False, log=print):
         found_hotends, hotend_sources = find_matches(readme_text, hotend_table)
         found_probes, probe_sources = find_matches(readme_text, probe_table)
         found_boards, board_sources = find_matches(readme_text, board_table)
-        found_fans, fan_sources = find_fans(readme_text)
+        found_hotend_fans, found_part_cooling_fans, hotend_fan_sources, part_cooling_fan_sources = find_fans(readme_text)
         filament_cutter_source = find_filament_cutter_source(readme_text)
 
         # Filter out "BMG"
@@ -577,15 +641,30 @@ def run_scan(recheck=False, log=print):
         new_hotends   = find_new_items(found_hotends,   toolhead.get("hotend"),    hotend_table)
         new_probes    = find_new_items(found_probes,    toolhead.get("probe"),     probe_table)
         new_boards    = find_new_items(found_boards,    toolhead.get("boards"),    board_table)
-        new_fans      = find_new_simple(found_fans,     toolhead.get("fans"))
+        existing_hotend_fan, hotend_fan_key = get_existing_fan_field(
+            toolhead, "hotend_fans", "hotend_fan"
+        )
+        existing_part_fan, part_fan_key = get_existing_fan_field(
+            toolhead, "part_cooling_fans", "part_cooling_fan"
+        )
+
+        new_hotend_fans = find_new_simple(found_hotend_fans, existing_hotend_fan)
+        new_part_cooling_fans = find_new_simple(found_part_cooling_fans, existing_part_fan)
 
         existing_cutter = str(toolhead.get("filament_cutter", "")).lower().strip()
         new_filament_cutter = bool(
             filament_cutter_source and existing_cutter in PLACEHOLDER_VALUES
         )
 
-        if not any([new_extruders, new_hotends, new_probes, new_boards,
-                    new_fans, new_filament_cutter]):
+        if not any([
+            new_extruders,
+            new_hotends,
+            new_probes,
+            new_boards,
+            new_hotend_fans,
+            new_part_cooling_fans,
+            new_filament_cutter,
+        ]):
             continue
 
         # Build source map for new items
@@ -598,8 +677,10 @@ def run_scan(recheck=False, log=print):
             name_sources[item] = probe_sources.get(item, "Unknown source")
         for item in new_boards:
             name_sources[item] = board_sources.get(item, "Unknown source")
-        for item in new_fans:
-            name_sources[item] = fan_sources.get(item, "Unknown source")
+        for item in new_hotend_fans:
+            name_sources[f"hotend_fan::{item}"] = hotend_fan_sources.get(item, "Unknown source")
+        for item in new_part_cooling_fans:
+            name_sources[f"part_cooling_fan::{item}"] = part_cooling_fan_sources.get(item, "Unknown source")
         if new_filament_cutter:
             name_sources["filament_cutter"] = filament_cutter_source or "Unknown source"
 
@@ -607,11 +688,18 @@ def run_scan(recheck=False, log=print):
         log(f"Toolhead : {name}")
         for label, items in [("Extruders", new_extruders), ("Hotends", new_hotends),
                              ("Probes", new_probes), ("Boards", new_boards),
-                             ("Fans", new_fans)]:
+                             ("Hotend Fans", new_hotend_fans),
+                             ("Part Cooling Fans", new_part_cooling_fans)]:
             if items:
                 log(f"  NEW {label:10s}: {', '.join(items)}")
                 for item in items:
-                    log(f"    -> From: {name_sources.get(item, 'Unknown')}")
+                    if label == "Hotend Fans":
+                        source_key = f"hotend_fan::{item}"
+                    elif label == "Part Cooling Fans":
+                        source_key = f"part_cooling_fan::{item}"
+                    else:
+                        source_key = item
+                    log(f"    -> From: {name_sources.get(source_key, 'Unknown')}")
         if new_filament_cutter:
             log("  NEW Filament Cutter: supported")
             log(f"    -> From: {name_sources.get('filament_cutter', 'Unknown')}")
@@ -625,8 +713,10 @@ def run_scan(recheck=False, log=print):
             updated["probe"]     = merge_field(toolhead.get("probe"),     new_probes)
         if new_boards:
             updated["boards"]    = merge_field(toolhead.get("boards"),    new_boards)
-        if new_fans:
-            updated["fans"]      = merge_field(toolhead.get("fans"),      new_fans)
+        if new_hotend_fans:
+            updated[hotend_fan_key] = merge_field(existing_hotend_fan, new_hotend_fans)
+        if new_part_cooling_fans:
+            updated[part_fan_key] = merge_field(existing_part_fan, new_part_cooling_fans)
         if new_filament_cutter:
             updated["filament_cutter"] = "supported"
         updated["_new_item_sources"] = name_sources
@@ -638,7 +728,8 @@ def run_scan(recheck=False, log=print):
             "new_hotends":    new_hotends,
             "new_probes":     new_probes,
             "new_boards":     new_boards,
-            "new_fans":       new_fans,
+            "new_hotend_fans": new_hotend_fans,
+            "new_part_cooling_fans": new_part_cooling_fans,
             "new_filament_cutter": new_filament_cutter,
             "sources":        name_sources,
             "updated":        updated,

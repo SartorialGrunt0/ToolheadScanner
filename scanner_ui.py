@@ -13,6 +13,7 @@ Provides:
 import threading
 import tkinter as tk
 from tkinter import ttk, messagebox
+import json
 
 import scan_toolheads
 
@@ -28,6 +29,13 @@ def _field_as_list(value):
     return [str(value)]
 
 
+def _fan_field_as_list(toolhead, singular_key, plural_key):
+    """Read fan values from either singular or plural field names."""
+    if plural_key in toolhead:
+        return _field_as_list(toolhead.get(plural_key))
+    return _field_as_list(toolhead.get(singular_key))
+
+
 # ── Application ───────────────────────────────────────────────────────────────
 
 class ToolheadScannerApp(tk.Tk):
@@ -40,6 +48,8 @@ class ToolheadScannerApp(tk.Tk):
         self._build_ui()
         self._refresh_toolhead_names()
         self._scan_running = False
+        self._last_results = []
+        self._view_mode = "parsed"
 
     # ── Layout ─────────────────────────────────────────────────────────────
 
@@ -62,6 +72,11 @@ class ToolheadScannerApp(tk.Tk):
             btn_frame, text="Refresh Toolheads", command=self._refresh_toolhead_names
         )
         self.btn_refresh_toolheads.pack(side=tk.LEFT, padx=(8, 4))
+
+        self.btn_toggle_view = ttk.Button(
+            btn_frame, text="View: Parsed", command=self._toggle_view
+        )
+        self.btn_toggle_view.pack(side=tk.LEFT, padx=(8, 4))
 
         self.status_var = tk.StringVar(value="Ready")
         ttk.Label(btn_frame, textvariable=self.status_var).pack(side=tk.RIGHT)
@@ -142,6 +157,14 @@ class ToolheadScannerApp(tk.Tk):
         self.btn_recheck.configure(state=state)
         self.btn_refresh_toolheads.configure(state=state)
         self.btn_add_extra.configure(state=state)
+        self.btn_toggle_view.configure(state=state)
+
+    def _toggle_view(self):
+        self._view_mode = "json" if self._view_mode == "parsed" else "parsed"
+        self.btn_toggle_view.configure(
+            text="View: JSON" if self._view_mode == "json" else "View: Parsed"
+        )
+        self._show_results(self._last_results)
 
     def _refresh_toolhead_names(self):
         try:
@@ -231,6 +254,14 @@ class ToolheadScannerApp(tk.Tk):
         self.result_text.configure(state=tk.DISABLED)
 
     def _show_results(self, results):
+        self._last_results = results
+
+        if self._view_mode == "json":
+            self._show_results_json(results)
+        else:
+            self._show_results_parsed(results)
+
+    def _show_results_parsed(self, results):
         rt = self.result_text
         rt.configure(state=tk.NORMAL)
         rt.delete("1.0", tk.END)
@@ -251,7 +282,8 @@ class ToolheadScannerApp(tk.Tk):
             new_hot    = set(entry["new_hotends"])
             new_prb    = set(entry["new_probes"])
             new_brd    = set(entry["new_boards"])
-            new_fan    = set(entry.get("new_fans", []))
+            new_hot_fan = set(entry.get("new_hotend_fans", []))
+            new_part_fan = set(entry.get("new_part_cooling_fans", []))
             new_cut    = bool(entry.get("new_filament_cutter", False))
 
             rt.insert(tk.END, f"{'═' * 60}\n", "heading")
@@ -263,11 +295,19 @@ class ToolheadScannerApp(tk.Tk):
                 ("Hotends",   "hotend",    new_hot),
                 ("Probes",    "probe",     new_prb),
                 ("Boards",    "boards",    new_brd),
-                ("Fans",      "fans",      new_fan),
+                ("Hotend Fans", "hotend_fan", new_hot_fan),
+                ("Part Cooling Fans", "part_cooling_fan", new_part_fan),
             ]
 
             for label, field_key, new_set in sections:
-                existing = _field_as_list(original.get(field_key))
+                if field_key == "hotend_fan":
+                    existing = _fan_field_as_list(original, "hotend_fan", "hotend_fans")
+                elif field_key == "part_cooling_fan":
+                    existing = _fan_field_as_list(
+                        original, "part_cooling_fan", "part_cooling_fans"
+                    )
+                else:
+                    existing = _field_as_list(original.get(field_key))
                 if not existing and not new_set:
                     continue
 
@@ -282,7 +322,12 @@ class ToolheadScannerApp(tk.Tk):
                     rt.insert(tk.END, f"    + {item}", "new_item")
                     rt.insert(tk.END, "  (NEW)\n", "new_item")
                     # Show the source line that triggered it
-                    source_line = sources.get(item, "")
+                    source_key = item
+                    if field_key == "hotend_fan":
+                        source_key = f"hotend_fan::{item}"
+                    elif field_key == "part_cooling_fan":
+                        source_key = f"part_cooling_fan::{item}"
+                    source_line = sources.get(source_key, "")
                     if source_line:
                         # Truncate very long source lines for readability
                         display = source_line if len(source_line) <= 200 else source_line[:200] + "…"
@@ -303,6 +348,21 @@ class ToolheadScannerApp(tk.Tk):
                         rt.insert(tk.END, f"      ↳ {display}\n", "source")
                 rt.insert(tk.END, "\n")
 
+        rt.configure(state=tk.DISABLED)
+
+    def _show_results_json(self, results):
+        rt = self.result_text
+        rt.configure(state=tk.NORMAL)
+        rt.delete("1.0", tk.END)
+
+        if not results:
+            rt.insert(tk.END, "{\n  \"toolheads\": []\n}\n", "existing")
+            rt.configure(state=tk.DISABLED)
+            return
+
+        payload = {"toolheads": [entry["updated"] for entry in results]}
+        rt.insert(tk.END, json.dumps(payload, indent=2), "existing")
+        rt.insert(tk.END, "\n")
         rt.configure(state=tk.DISABLED)
 
 

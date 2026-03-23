@@ -39,57 +39,16 @@
       "category": "Full Size Printers",
       "configurator": true,
       "hotend_fan": "2510",
-      "part_cooling_fan": "4010",
-      "filament_cutter": "native",
-      "fans": [
+      "part_cooling_fan": [
         "4010",
         "2510"
       ],
+      "filament_cutter": "native",
       "_new_item_sources": {
         "Clockwork2": "| :information_source: **Clockwork2 carriage/Tap users**: Don't forget the 2x M3x8 SHCS that go behind the adapter      | <img src='docs/images/extruder_adapter_cw2.png' width=150> |",
         "NF-Crazy Volcano": "| 1   | Hotend                                        | Recommended hotend:<br/>*  **Dragon HF** with **Triangle Lab ZS-MZE-HF** (<a href=\"https://trianglelab.net/products/mze%E2%84%A2-dlc-v6-melt-zone-extruder\">trianglelab.net</a>)<img src='docs/images/DragonHF+MZE.png' width=120 alt=\"Dragon\" align='right'> <br/> Alternatives: <br/>* Chube Compact <br/>* Dragon UHF or UHF-Mini <br/>* Dragon Ace `use the included 3mm spacer`<br/>* Dragon Ace with MZE `use the included 3mm spacer`<br/>* Rapido HF or UHF<br/>* NF-Crazy Volcano `May melt plastic behind status LED without tape insulation` <br/>* Revo-Voron<br/>* Bambulab<br/>* TZ-V6-2.0 <br/><br/>`volcano blocks with oversize heater cartridges may require some insulation tape (aluminium/reflective) on the back of the LED housing that faces the hotend.`      |",
         "Cartographer": "A printer that fits either Xol carriage, or a standard voron CW2 or Tap carriage. `NOT cartographer CNC carriage (see warning below)`<br/>",
-        "4010": "* Dual 4010 blower fans for part cooling",
-        "2510": "| 1   | 2510 Axial Fan                                | Recommended fan: Delta Electronics 15,000 RPM 5v ASB02505SHA-AY6B (<a href=\"https://www.digikey.com/en/products/detail/delta-electronics/ASB02505SHA-AY6B/7491489\">DigiKey</a>) <br/><br/> `\u26a0\ufe0f GDStime 2510 fans have been measuring as ~10.4mm thick. A workaround is to \"sink\" the hotend fand duct 0.4mm into the print bed with the slicer before printing.`|"
-      }
-    },
-    {
-      "name": "AntHead",
-      "extruders": [
-        "Sherpa Mini",
-        "Wristwatch BMG",
-        "Wristwatch G2",
-        "Galileo 2",
-        "Orbiter 2"
-      ],
-      "probe": [
-        "Beacon",
-        "Cartographer"
-      ],
-      "hotend": [
-        "Bambu X1/P1",
-        "Dragon Ace",
-        "Revo",
-        "Dragon HF",
-        "Dragon UHF",
-        "Rapido HF"
-      ],
-      "url": "https://github.com/PrintersForAnts/AntHead",
-      "description": "Lightweight toolhead for Printers for Ants.",
-      "title": "AntHead",
-      "image": "/Anthead_render.webp",
-      "category": "Printers for Ants",
-      "configurator": true,
-      "hotend_fan": "2510",
-      "part_cooling_fan": "4010",
-      "filament_cutter": "unknown",
-      "fans": [
-        "4010",
-        "2510"
-      ],
-      "_new_item_sources": {
-        "4010": "* 2x 4010 blower fans",
-        "2510": "* 1x 2510 axial fan"
+        "part_cooling_fan::2510": "| Lock the 2510 HE fan in place by sliding the HE fan duct up until the flexture locks.<br/>`\u26a0\ufe0f Careful, don't pinch any wires`| <img src='docs/images/2510_install2.png' width=150> |"
       }
     },
     {
@@ -122,10 +81,8 @@
       "hotend_fan": "4028",
       "part_cooling_fan": "CPAP",
       "filament_cutter": "unknown",
-      "fans": "CPAP",
       "_new_item_sources": {
-        "Vz HextrudORT": "After a lot of experimenting with other cooling designs such as the [Tentacool](https://github.com/MirageC79/HextrudORT/tree/main/files/COOLING/TENTACOOL), I plan on merging the ideas produced from the V2.5 cooler, with the ideas from the Tentacool. I don't want to give a release date as it's a slow process, but a release is on the hoizon.",
-        "CPAP": "# CrownCooler - Ring shaped CPAP cooling duct for Voron 3D printers"
+        "Vz HextrudORT": "After a lot of experimenting with other cooling designs such as the [Tentacool](https://github.com/MirageC79/HextrudORT/tree/main/files/COOLING/TENTACOOL), I plan on merging the ideas produced from the V2.5 cooler, with the ideas from the Tentacool. I don't want to give a release date as it's a slow process, but a release is on the hoizon."
       }
     },
     {
@@ -142,11 +99,10 @@
       "title": "DK's Monolith",
       "image": "",
       "hotend_fan": "unknown",
-      "part_cooling_fan": "unknown",
+      "part_cooling_fan": "CPAP",
       "filament_cutter": "unknown",
-      "fans": "CPAP",
       "_new_item_sources": {
-        "CPAP": "I intend to make some modified versions that have, improved CAD, a timeline (DK is a menance), Helicoil support, Regular BMG Support, PEEK tube lined filament path, 15/18mm CPAP tubing"
+        "part_cooling_fan::CPAP": "I intend to make some modified versions that have, improved CAD, a timeline (DK is a menance), Helicoil support, Regular BMG Support, PEEK tube lined filament path, 15/18mm CPAP tubing"
       }
     },
     {
@@ -202,21 +158,21 @@
       "image": "/dragonburner.webp",
       "category": "Printers for Ants",
       "configurator": true,
-      "hotend_fan": "3010",
-      "part_cooling_fan": "4010",
-      "filament_cutter": "unknown",
-      "fans": [
-        "4010",
+      "hotend_fan": [
         "3010",
         "2510"
       ],
+      "part_cooling_fan": [
+        "4010",
+        "3010"
+      ],
+      "filament_cutter": "unknown",
       "_new_item_sources": {
         "Wristwatch G2": "- 2023-11-04 Improved WristWatch G2 extruder mount",
         "Rapido UHF": "**NOTE**: The [Rapid Burner](https://github.com/chirpy2605/voron/tree/main/V0/Rapid_Burner) toolhead supports the Rapido UHF and Dragon UHF hotends.",
         "Dragon UHF": "**NOTE**: The [Rapid Burner](https://github.com/chirpy2605/voron/tree/main/V0/Rapid_Burner) toolhead supports the Rapido UHF and Dragon UHF hotends.",
-        "4010": "This toolhead improves the cooling of the hotend and provides much improved part cooling when printing filament that needs it (e.g. PLA). Designed to use 2 4010 blower fans for part cooling and a 3010 fan for hotend cooling.",
-        "3010": "This toolhead improves the cooling of the hotend and provides much improved part cooling when printing filament that needs it (e.g. PLA). Designed to use 2 4010 blower fans for part cooling and a 3010 fan for hotend cooling.",
-        "2510": "There is also a 2510 fan spacer if you would prefer to use a smaller hotend fan."
+        "hotend_fan::2510": "- 2023-10-14 Modified 2510 hotend fan spacer",
+        "part_cooling_fan::3010": "This toolhead improves the cooling of the hotend and provides much improved part cooling when printing filament that needs it (e.g. PLA). Designed to use 2 4010 blower fans for part cooling and a 3010 fan for hotend cooling."
       }
     },
     {
@@ -238,11 +194,10 @@
       "title": "Fibre Steam",
       "image": "",
       "hotend_fan": "unknown",
-      "part_cooling_fan": "unknown",
+      "part_cooling_fan": "CPAP",
       "filament_cutter": "unknown",
-      "fans": "CPAP",
       "_new_item_sources": {
-        "CPAP": "Fibre Steam is a robust and high performance CPAP toolhead designed for the Monolith Gantry. Fibre Steam's variants integrate the extruder into the toolhead which allows for accurate CoM balancing for the toolhead. CoM and the overall stiffness of your toolhead is integral to achieving good input shapers for high performance printing."
+        "part_cooling_fan::CPAP": "Fibre Steam is a robust and high performance CPAP toolhead designed for the Monolith Gantry. Fibre Steam's variants integrate the extruder into the toolhead which allows for accurate CoM balancing for the toolhead. CoM and the overall stiffness of your toolhead is integral to achieving good input shapers for high performance printing."
       }
     },
     {
@@ -272,9 +227,8 @@
       "title": "Gustav",
       "image": "",
       "hotend_fan": "unknown",
-      "part_cooling_fan": "unknown",
+      "part_cooling_fan": "CPAP",
       "filament_cutter": "unknown",
-      "fans": "CPAP",
       "_new_item_sources": {
         "Sherpa Micro": "- Sherpa Micro Extruder [here](https://github.com/Annex-Engineering/Sherpa_Micro-Extruder/tree/main)",
         "Orbiter 2": "- LDO Orbiter 2.0 [here](https://www.orbiterprojects.com/orbiter-v2-0/)",
@@ -282,7 +236,7 @@
         "Goliath": "- Goliath Water & Air",
         "Chube": "- Chube AIR",
         "Klicky": "- Klicky [here](https://github.com/jlas1/Klicky-Probe)",
-        "CPAP": "- CPAP"
+        "part_cooling_fan::CPAP": "- CPAP"
       }
     },
     {
@@ -341,15 +295,9 @@
       "hotend_fan": "3010",
       "part_cooling_fan": "5015",
       "filament_cutter": "unknown",
-      "fans": [
-        "5015",
-        "3010"
-      ],
       "_new_item_sources": {
         "Klicky": "- [(Un)Klicky Probe](https://github.com/jlas1/Klicky-Probe)",
-        "TAP": "This toolhead should not lose any X or Z axis travel. There should be no Y axis loss on the v0.2, but on the v0.1 it may tap the door/tophat. Those with raised/square tophat/top frames should have no issues.",
-        "5015": "This is a Voron v0 toolhead for the v0.1 and v0.2 that uses the guts of a 5015 fan for part cooling and incorporates Neopixel RGBW leds. It currently works with the LGX Lite extruder, Orbiter v1.5, the [Voron PocketWatch 2](https://github.com/VoronDesign/Pocket-Watch) and the [RoundHouse](https://github.com/waytotheweb/voron/tree/main/general/RoundHouse) and the [RoundAbout](https://github.com/waytotheweb/voron/tree/main/general/RoundAbout) extruders designed specifically for this toolhead. My latest [Roundtrip](https://github.com/waytotheweb/voron/tree/main/general/RoundTrip) extruders will also work well with this.",
-        "3010": "- 1x 3010 hotend fan (24v recommended)"
+        "TAP": "This toolhead should not lose any X or Z axis travel. There should be no Y axis loss on the v0.2, but on the v0.1 it may tap the door/tophat. Those with raised/square tophat/top frames should have no issues."
       }
     },
     {
@@ -389,53 +337,11 @@
       "part_cooling_fan": "4010",
       "filament_cutter": "unknown",
       "boards": "SB2040",
-      "fans": [
-        "4010",
-        "2510"
-      ],
       "_new_item_sources": {
         "Quickdraw": "- Quickdraw 2 support",
         "Unklicky": "- The Klicky Probe carriage that was adapted was originally designed for the Dragon hotend. You'll need to use a taller probe body to reach the bed such as the one used by [Unklicky BFP](https://github.com/majarspeed/Unklicky). *This isn't an issue for Euclid or PCB Klicky*.",
         "Klicky": "- Support for JosAr's Klicky, VinnyCordeiro and WhoppingPochard's PCB Klicky, and Nionio6915's Euclid",
-        "SB2040": "[Takuya](https://github.com/T4KUUY4)... just added the 36mm SB2040 mount",
-        "4010": "|4010 24v blower fans|2|Add Polulu 3796 if you want the fancy 12v Deltas|",
-        "2510": "|2510 24v axial fan|1|"
-      }
-    },
-    {
-      "name": "Mini-Aftersherpa",
-      "extruders": [
-        "Sherpa Mini",
-        "Sherpa Micro",
-        "Sailfin",
-        "Orbiter 1.5",
-        "Orbiter 2"
-      ],
-      "probe": "ZeroClick",
-      "hotend": [
-        "Dragon HF",
-        "Dragonfly",
-        "E3D V6",
-        "Mosquito",
-        "NF-Crazy",
-        "Revo"
-      ],
-      "url": "https://github.com/PrintersForAnts/Mini-AfterSherpa",
-      "description": "Toolhead for Voron V0.1, adds support for standalone extruders.",
-      "category": "Printers for Ants",
-      "configurator": false,
-      "title": "Mini-Aftersherpa",
-      "image": "",
-      "hotend_fan": "3007",
-      "part_cooling_fan": "3010",
-      "filament_cutter": "unknown",
-      "fans": [
-        "3010",
-        "3007"
-      ],
-      "_new_item_sources": {
-        "3010": "- 2\u00d7: 3010 blower fans (same as Mini-Afterburner)",
-        "3007": "- 1\u00d7: 3007 axial fan (same as Mini-Afterburner)"
+        "SB2040": "[Takuya](https://github.com/T4KUUY4)... just added the 36mm SB2040 mount"
       }
     },
     {
@@ -475,15 +381,9 @@
       ],
       "part_cooling_fan": "3010",
       "filament_cutter": "unknown",
-      "fans": [
-        "3010",
-        "3007"
-      ],
       "_new_item_sources": {
         "Vz HextrudORT": "| [Vz-Hextrudort](https://github.com/VzBoT3D/Vz-HextrudORT)                                                                                                                               | `Cowling.stl` and `Vz-Hextrudort_adapter.stl` |",
-        "Vorxtrudort": "| [Vorxtrudort](https://github.com/nhchiu/VoronMods/tree/main/Extruder)                                                                                                                   | `Cowling.stl`                                 |",
-        "3010": "- 3010 blower fans for part cooling",
-        "3007": "- 3007 or 3010 axial fan for hotend cooling (depending on the hotend)"
+        "Vorxtrudort": "| [Vorxtrudort](https://github.com/nhchiu/VoronMods/tree/main/Extruder)                                                                                                                   | `Cowling.stl`                                 |"
       }
     },
     {
@@ -522,18 +422,18 @@
       "configurator": true,
       "title": "Rapid Burner",
       "image": "/rapidburner.webp",
-      "hotend_fan": "3010",
-      "part_cooling_fan": "4010",
-      "filament_cutter": "unknown",
-      "fans": [
+      "hotend_fan": [
         "3010",
-        "4010",
         "2510"
       ],
+      "part_cooling_fan": [
+        "4010",
+        "3010"
+      ],
+      "filament_cutter": "unknown",
       "_new_item_sources": {
-        "3010": "- Single 3010 24v hotend cooling fan",
-        "4010": "- Twin 4010 24v blower part cooling fans",
-        "2510": "There is also a 2510 fan spacer if you would prefer to use a smaller hotend fan."
+        "hotend_fan::2510": "- 2023-10-14 Modified 2510 hotend fan spacer",
+        "part_cooling_fan::3010": "Insert the fans. You will need to release the cable from the tabs on the front-end 3010 fan as well as the left part cooling 4010 fan. This is to allow the cable to be routed correctly. Care should be taken with the cables after doing this as too much movement could break off the wires from the fans. You can add cable relief with a dab of hot glue on the fan wire connections under the sticker."
       }
     },
     {
@@ -571,16 +471,14 @@
       "title": "Reaper",
       "image": "/reaper.webp",
       "hotend_fan": "3010",
-      "part_cooling_fan": "5015",
-      "filament_cutter": "unknown",
-      "fans": [
+      "part_cooling_fan": [
         "5015",
         "3010"
       ],
+      "filament_cutter": "unknown",
       "_new_item_sources": {
         "Vz HextrudORT": "- Hextrudort",
-        "5015": "## Reaper uses a 3010 HE fan and dual 5015 part cooling fans.",
-        "3010": "## Reaper uses a 3010 HE fan and dual 5015 part cooling fans."
+        "part_cooling_fan::3010": "## Reaper uses a 3010 HE fan and dual 5015 part cooling fans."
       }
     },
     {
@@ -610,15 +508,14 @@
       "title": "StovePipe",
       "image": "",
       "hotend_fan": "unknown",
-      "part_cooling_fan": "unknown",
-      "filament_cutter": "unknown",
-      "fans": [
+      "part_cooling_fan": [
         "CPAP",
         "5015"
       ],
+      "filament_cutter": "unknown",
       "_new_item_sources": {
-        "CPAP": "# Stove Pipe - a CPAP fan implementation for the Voron v0.1",
-        "5015": "As a backup, you can also use a modified [MailBox Toolhead](https://github.com/waytotheweb/voron/blob/main/V0/5015_Toolhead) duct on the toolhead shroud and a 5015 fan! This can be swapped out without having to dismantle the toolhead."
+        "part_cooling_fan::CPAP": "# Stove Pipe - a CPAP fan implementation for the Voron v0.1",
+        "part_cooling_fan::5015": "As a backup, you can also use a modified [MailBox Toolhead](https://github.com/waytotheweb/voron/blob/main/V0/5015_Toolhead) duct on the toolhead shroud and a 5015 fan! This can be swapped out without having to dismantle the toolhead."
       }
     },
     {
@@ -659,27 +556,6 @@
       }
     },
     {
-      "name": "Trinity",
-      "extruders": [
-        "Sherpa Mini"
-      ],
-      "probe": "unknown",
-      "hotend": "Dragon Ace Volcano",
-      "url": "https://github.com/WV-design/Trinity-toolhead/",
-      "description": "High performance part cooling toolhead, features 3628 fans and 9mm belt support.",
-      "category": "Full Size Printers",
-      "configurator": false,
-      "title": "Trinity",
-      "image": "/Trinity.webp",
-      "hotend_fan": "2510",
-      "part_cooling_fan": "3628",
-      "filament_cutter": "unknown",
-      "fans": "2510",
-      "_new_item_sources": {
-        "2510": "| 1 | 2510 fan | Recommended: <br /> [delta ASB02505SHA-AY6B](https://www.digikey.com/en/products/detail/delta-electronics/ASB02505SHA-AY6B/7491489?s=N4IgTCBcDaIIIGUBCAGMBWF6EAk4Fo4BNANiRAF0BfIA) |"
-      }
-    },
-    {
       "name": "Yavoth",
       "extruders": [
         "Sherpa Mini",
@@ -707,19 +583,21 @@
       "configurator": true,
       "title": "Yavoth",
       "image": "/yavoth.webp",
-      "hotend_fan": "2510",
-      "part_cooling_fan": "4010",
-      "filament_cutter": "unknown",
-      "fans": [
-        "4010",
+      "hotend_fan": [
         "2510",
+        "4010",
         "3010"
       ],
+      "part_cooling_fan": [
+        "4010",
+        "2510"
+      ],
+      "filament_cutter": "unknown",
       "_new_item_sources": {
         "Dragon Ace": "- Dragon Ace (with ~3mm spacer)",
-        "4010": "This is a toolhead for High and Ultra High Flow style hotends using angled 4010 part cooling fans and a 2510 hotend fan.",
-        "2510": "This is a toolhead for High and Ultra High Flow style hotends using angled 4010 part cooling fans and a 2510 hotend fan.",
-        "3010": "It uses a 2510 hotend fan sighted at an advantageous height to offer improved hotend cooling performance compared to a 3010 hotend fan."
+        "hotend_fan::4010": "This is a toolhead for High and Ultra High Flow style hotends using angled 4010 part cooling fans and a 2510 hotend fan.",
+        "hotend_fan::3010": "It uses a 2510 hotend fan sighted at an advantageous height to offer improved hotend cooling performance compared to a 3010 hotend fan.",
+        "part_cooling_fan::2510": "This is a toolhead for High and Ultra High Flow style hotends using angled 4010 part cooling fans and a 2510 hotend fan."
       }
     },
     {
@@ -737,7 +615,8 @@
       "probe": [
         "Beacon",
         "Cartographer",
-        "Klicky"
+        "Klicky",
+        "Klicky PCB"
       ],
       "hotend": [
         "Rapido UHF",
@@ -745,6 +624,7 @@
         "Dragon Ace",
         "Red Lizard K1 UHF",
         "Chube Air",
+        "Red Lizard K1 HF",
         "Chube",
         "Rapido HF"
       ],
@@ -761,8 +641,10 @@
       "_new_item_sources": {
         "Wristwatch G2": "[WWBMG]: https://github.com/tetsu97/WristWatch-G2-Extruder",
         "Galileo 2": "[G2SA]: https://github.com/JaredC01/Galileo2",
+        "Red Lizard K1 HF": "[Rapido UHF/HF], [TZV6 w/MZE], [Dragon Ace], [Chube Air], [Red Lizard K1 HF/UHF],",
         "Chube": "### Chube Hotend",
         "Rapido HF": "For Rapido HF/UHF, Dragon Ace, and TZV6:",
+        "Klicky PCB": "[Beacon], [Cartographer V3/V4], Klicky PCB soon",
         "EBB36": "- [Download Can Bus Mount](https://github.com/Hyperdrive-Design/Hypernova/blob/main/STL/canbus-extruder_parts/sherpa_mini/EBB36%20Mount%20-%20Sherpa-Mini%20%5Bstrain%20relief%5D.stl?raw=true)"
       }
     },
