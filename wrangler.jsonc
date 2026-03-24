@@ -1,0 +1,26 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "toolheadscanner",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-03-24",
+  "kv_namespaces": [
+    {
+      "binding": "HASH_CACHE",
+      "id": "REPLACE_HASH_CACHE_ID",
+      "preview_id": "REPLACE_HASH_CACHE_PREVIEW_ID"
+    },
+    {
+      "binding": "SCANNER_STATE",
+      "id": "REPLACE_SCANNER_STATE_ID",
+      "preview_id": "REPLACE_SCANNER_STATE_PREVIEW_ID"
+    }
+  ],
+  "triggers": {
+    "crons": [
+      "0 8 * * *"
+    ]
+  },
+  "vars": {
+    "TOOLHEAD_DATA_SOURCE_BASE": "https://raw.githubusercontent.com/SartorialGrunt0/ToolheadBuilder/main/src/data"
+  }
+}
