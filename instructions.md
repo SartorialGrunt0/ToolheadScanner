@@ -52,6 +52,8 @@ Copy `.dev.vars.example` to `.dev.vars` and set values:
 - `NOTIFY_EMAIL_TO`: one or more recipient emails (comma-separated)
 - `TOOLHEAD_DATA_SOURCE_BASE` (optional): alternate upstream JSON source
 
+Important: `.dev.vars` is only used by local development (`wrangler dev`). It is not used by the deployed Worker.
+
 ## 6. Configure production secrets
 
 ```bash
@@ -60,6 +62,21 @@ npx wrangler secret put RESEND_API_KEY
 npx wrangler secret put NOTIFY_EMAIL_FROM
 npx wrangler secret put NOTIFY_EMAIL_TO
 ```
+
+Set `NOTIFY_EMAIL_FROM` to a valid sender format, for example:
+
+- `Toolhead Scanner <sender@yourdomain.com>`
+- `sender@yourdomain.com`
+
+Then verify secrets were saved in Cloudflare:
+
+```bash
+npx wrangler secret list
+```
+
+Expected result: at least `MANUAL_RUN_TOKEN`, `RESEND_API_KEY`, `NOTIFY_EMAIL_FROM`, and `NOTIFY_EMAIL_TO` are listed.
+
+If `wrangler secret list` returns `[]`, dashboard buttons and protected API calls will fail in production.
 
 If needed, also set environment variables in Wrangler for non-secret values.
 
@@ -94,6 +111,12 @@ You can run the same flow manually through API or dashboard.
   - Run Scan (normal hash-aware run)
   - Run Full Recheck (ignores hash cache)
   - Extra location add/delete controls
+
+If buttons appear to do nothing, check:
+
+- `npx wrangler secret list` is not empty
+- The token pasted in the dashboard matches the deployed `MANUAL_RUN_TOKEN` secret
+- You redeployed after updating config/secrets (`npm run deploy`)
 
 ### API
 
@@ -134,6 +157,9 @@ curl -X GET "https://YOUR_WORKER_DOMAIN/last-run" \
   - Missing or wrong `MANUAL_RUN_TOKEN`
 - 503 MANUAL_RUN_TOKEN is not configured:
   - Secret not set in deployed environment
+- Dashboard buttons not working in production:
+  - Run `npx wrangler secret list`; if it returns `[]`, set required secrets and redeploy
+  - Ensure the dashboard token matches deployed `MANUAL_RUN_TOKEN`
 - No email notifications:
   - Ensure `RESEND_API_KEY`, `NOTIFY_EMAIL_FROM`, and `NOTIFY_EMAIL_TO` are configured
 - No changes detected unexpectedly:

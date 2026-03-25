@@ -49,30 +49,30 @@ function dashboardHtml(): string {
   <title>ToolheadScanner Dashboard</title>
   <style>
     :root {
-      --bg: #f4f1e8;
-      --panel: #fffaf0;
-      --ink: #232323;
-      --muted: #6b665b;
-      --line: #d7cfbf;
-      --brand: #1f6a5a;
-      --brand-2: #c95f3f;
-      --ok: #2f7a45;
-      --error: #b2362f;
+      --bg: #0b0f16;
+      --panel: #141b26;
+      --ink: #e8ecf4;
+      --muted: #a1adbf;
+      --line: #2a3547;
+      --brand: #3c82f6;
+      --brand-2: #0ea5a0;
+      --ok: #3ccf8e;
+      --error: #ff7474;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
       font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-      background: radial-gradient(circle at 20% -20%, #f8f4ec 0, var(--bg) 42%, #ebe4d4 100%);
+      background: radial-gradient(circle at 15% -10%, #1d283b 0, var(--bg) 44%, #070a10 100%);
       color: var(--ink);
     }
     .wrap { max-width: 1120px; margin: 0 auto; padding: 24px; }
     .hero {
-      background: linear-gradient(120deg, #fef7ec, #f2e9d7);
+      background: linear-gradient(120deg, #182131, #111824);
       border: 1px solid var(--line);
       border-radius: 14px;
       padding: 20px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
       margin-bottom: 16px;
     }
     h1 { margin: 0 0 8px; font-size: 28px; letter-spacing: 0.2px; }
@@ -85,25 +85,28 @@ function dashboardHtml(): string {
     @media (min-width: 960px) {
       .grid { grid-template-columns: 1.1fr 0.9fr; }
     }
+    .grid > * { min-width: 0; }
     .card {
       border: 1px solid var(--line);
       border-radius: 12px;
       background: var(--panel);
       padding: 14px;
+      min-width: 0;
     }
     .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
     label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px; }
     input, textarea {
       width: 100%;
-      border: 1px solid #cfc5b1;
+      border: 1px solid #32425c;
       border-radius: 8px;
       padding: 10px;
       font: inherit;
-      background: #fffefb;
+      background: #0d1420;
+      color: var(--ink);
     }
     textarea { min-height: 120px; }
     button {
-      border: 1px solid #1b5b4d;
+      border: 1px solid #2f6ad0;
       background: var(--brand);
       color: white;
       border-radius: 8px;
@@ -112,13 +115,13 @@ function dashboardHtml(): string {
       cursor: pointer;
     }
     button.alt {
-      border-color: #b25236;
+      border-color: #0d8f8b;
       background: var(--brand-2);
     }
     button.ghost {
       background: transparent;
       color: var(--ink);
-      border-color: #b8ad99;
+      border-color: #4c5f7e;
     }
     button:disabled { opacity: 0.5; cursor: default; }
     .status {
@@ -126,30 +129,52 @@ function dashboardHtml(): string {
       padding: 8px 10px;
       border-radius: 8px;
       border: 1px solid var(--line);
-      background: #f9f5eb;
+      background: #121a27;
       font-size: 13px;
     }
-    .status.ok { border-color: #7fb08c; color: var(--ok); background: #eef8ef; }
-    .status.error { border-color: #dc9a96; color: var(--error); background: #fff0ef; }
+    .status.ok { border-color: #3f8b68; color: var(--ok); background: #11241b; }
+    .status.error { border-color: #8b3f3f; color: var(--error); background: #261315; }
     .list { margin-top: 8px; border-top: 1px dashed var(--line); }
     .item {
       display: grid;
       gap: 6px;
-      grid-template-columns: 1fr auto;
-      align-items: start;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
       border-bottom: 1px dashed var(--line);
       padding: 9px 0;
+    }
+    .item-main {
+      min-width: 0;
+    }
+    .item-link {
+      display: block;
+      min-width: 0;
+      max-width: 100%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: #8cb3ff;
+      text-decoration: none;
+    }
+    .item-link:hover {
+      text-decoration: underline;
+      color: #b8d0ff;
     }
     .small { font-size: 12px; color: var(--muted); }
     pre {
       margin: 0;
       padding: 10px;
       border-radius: 8px;
-      background: #161616;
-      color: #f0f0f0;
-      overflow: auto;
-      max-height: 420px;
+      background: #080c13;
+      color: #e2e8f0;
+      overflow-x: auto;
+      overflow-y: auto;
+      width: 100%;
+      max-width: 100%;
+      height: 420px;
+      white-space: pre;
       font-size: 12px;
+      border: 1px solid #27344a;
     }
   </style>
 </head>
@@ -210,8 +235,33 @@ function dashboardHtml(): string {
     const toolheadEl = document.getElementById("toolhead");
     const urlEl = document.getElementById("url");
 
-    const saved = localStorage.getItem("toolheadscanner_token") || "";
-    tokenEl.value = saved;
+    function loadSavedToken() {
+      try {
+        return localStorage.getItem("toolheadscanner_token") || "";
+      } catch {
+        return "";
+      }
+    }
+
+    function saveTokenValue(value) {
+      try {
+        localStorage.setItem("toolheadscanner_token", value);
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
+    function clearTokenValue() {
+      try {
+        localStorage.removeItem("toolheadscanner_token");
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
+    tokenEl.value = loadSavedToken();
 
     function setStatus(message, type) {
       statusEl.textContent = message;
@@ -270,12 +320,22 @@ function dashboardHtml(): string {
       }
     }
 
+    function abbreviateUrl(rawUrl) {
+      try {
+        const parsed = new URL(rawUrl);
+        const compact = parsed.host + parsed.pathname;
+        return compact.length > 72 ? compact.slice(0, 69) + "..." : compact;
+      } catch {
+        return rawUrl.length > 72 ? rawUrl.slice(0, 69) + "..." : rawUrl;
+      }
+    }
+
     async function loadLocations() {
       try {
         const data = await requestJson("/extra-locations", { method: "GET", headers: authHeaders(false) });
         const items = Array.isArray(data.extra_locations) ? data.extra_locations : [];
         if (!items.length) {
-          locationsEl.innerHTML = "<p class=\"small\">No extra locations configured.</p>";
+          locationsEl.innerHTML = "<p class='small'>No extra locations configured.</p>";
           return;
         }
 
@@ -285,14 +345,19 @@ function dashboardHtml(): string {
           row.className = "item";
 
           const left = document.createElement("div");
+          left.className = "item-main";
           const title = document.createElement("div");
           title.textContent = entry.toolhead;
           title.style.fontWeight = "600";
-          const url = document.createElement("div");
-          url.className = "small";
-          url.textContent = entry.url;
+          const link = document.createElement("a");
+          link.className = "small item-link";
+          link.href = entry.url;
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          link.title = entry.url;
+          link.textContent = abbreviateUrl(entry.url);
           left.appendChild(title);
-          left.appendChild(url);
+          left.appendChild(link);
 
           const del = document.createElement("button");
           del.className = "ghost";
@@ -346,13 +411,13 @@ function dashboardHtml(): string {
     }
 
     document.getElementById("saveToken").addEventListener("click", () => {
-      localStorage.setItem("toolheadscanner_token", tokenEl.value.trim());
-      setStatus("Token saved in browser storage.", "ok");
+      const saved = saveTokenValue(tokenEl.value.trim());
+      setStatus(saved ? "Token saved in browser storage." : "Token set for this session only (browser storage unavailable).", saved ? "ok" : null);
     });
 
     document.getElementById("clearToken").addEventListener("click", () => {
       tokenEl.value = "";
-      localStorage.removeItem("toolheadscanner_token");
+      clearTokenValue();
       setStatus("Token cleared.", "ok");
     });
 
