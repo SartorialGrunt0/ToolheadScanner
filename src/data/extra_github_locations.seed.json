@@ -1,0 +1,12 @@
+{
+  "extra_locations": [
+    {
+      "toolhead": "Hypernova",
+      "url": "https://github.com/Hyperdrive-Design/hyperdrivedesign.com/blob/main/docs/products/Hypernova/hypernova.md"
+    },
+    {
+      "toolhead": "Hypernova BSE",
+      "url": "https://github.com/Hyperdrive-Design/hyperdrivedesign.com/blob/main/docs/products/Hypernova/hypernova_bedsligers.md"
+    }
+  ]
+}

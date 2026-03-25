@@ -1,0 +1,15 @@
+# Secrets
+.env
+.dev.vars
+
+# Python
+__pycache__/
+*.pyc
+
+# Node / Cloudflare
+node_modules/
+.wrangler/
+
+# Scanner temp files
+*.temp
+logs/
