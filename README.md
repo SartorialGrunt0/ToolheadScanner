@@ -17,7 +17,7 @@ The Cloudflare version keeps the same scanning and parsing goals, but changes th
 
 - Cloudflare cron triggers run the scan on a schedule
 - KV stores README hashes, last-run state, and extra GitHub locations
-- an HTTP endpoint allows manual runs and simple management operations
+- HTTP endpoints allow manual runs, location management, and a dashboard-based toolhead editor
 - email notifications use Resend's HTTP API instead of local SMTP
 
 ## Repository layout
@@ -53,6 +53,7 @@ Copy `.dev.vars.example` to `.dev.vars` and set values for:
 - `RESEND_API_KEY`: API key used for notifications
 - `NOTIFY_EMAIL_FROM`: sender address accepted by Resend
 - `NOTIFY_EMAIL_TO`: one or more recipient addresses, comma-separated
+- `GITHUB_TOKEN` (optional but required for dashboard PR creation): GitHub token with repo write access on your fork
 
 ### 4. Configure production secrets
 
@@ -61,6 +62,7 @@ npx wrangler secret put MANUAL_RUN_TOKEN
 npx wrangler secret put RESEND_API_KEY
 npx wrangler secret put NOTIFY_EMAIL_FROM
 npx wrangler secret put NOTIFY_EMAIL_TO
+npx wrangler secret put GITHUB_TOKEN
 ```
 
 If you want to change the upstream ToolheadBuilder data source, set `TOOLHEAD_DATA_SOURCE_BASE` in `wrangler.jsonc` or as an environment variable.
@@ -81,6 +83,8 @@ The Worker exposes:
 - `POST /extra-locations`: add an extra location
 - `DELETE /extra-locations`: remove an extra location
 - `PUT /extra-locations`: replace the full extra-location list
+- `GET /api/reference-data`: fetch live reference data for dashboard editing
+- `POST /api/create-pr`: create a ToolheadBuilder pull request from dashboard edits
 
 All endpoints except `/` and `/health` require:
 
@@ -89,6 +93,24 @@ Authorization: Bearer <MANUAL_RUN_TOKEN>
 ```
 
 The dashboard calls those secured endpoints and will work once you enter your token in the dashboard page.
+
+## Dashboard Toolhead Editor
+
+The dashboard now includes a **Toolhead Editor** tab that lets you:
+
+- select an existing toolhead or create a new one
+- edit all metadata fields (text, boolean, enum, and list fields)
+- modify list fields from full reference option lists
+- remove placeholder values like `unknown` when adding real components
+- stage an optional image upload for the same PR
+- submit changes as a GitHub pull request to `SartorialGrunt0/ToolheadBuilder`
+
+PR creation requires `GITHUB_TOKEN` to be configured. The token is used to:
+
+1. fork/sync the upstream ToolheadBuilder repository
+2. create a branch in the fork
+3. commit updated `src/data/toolheads.json` (and optional image)
+4. open a pull request back to upstream `main`
 
 ### Manual run example
 

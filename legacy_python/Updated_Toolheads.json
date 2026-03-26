@@ -1,0 +1,650 @@
+{
+  "toolheads": [
+    {
+      "name": "A4T",
+      "extruders": [
+        "Sherpa Mini",
+        "LGX-lite",
+        "Orbiter 2",
+        "Wristwatch G2",
+        "Wristwatch BMG",
+        "Vz HextrudORT",
+        "Clockwork2"
+      ],
+      "probe": [
+        "Tap",
+        "Klicky",
+        "Eddy",
+        "Omron",
+        "Cartographer"
+      ],
+      "hotend": [
+        "Bambu X1/P1",
+        "Dragon HF",
+        "Dragon UHF",
+        "Dragon Ace",
+        "NF-Crazy",
+        "Rapido HF",
+        "Rapido UHF",
+        "Revo",
+        "TZ2.0",
+        "Chube",
+        "NF-Crazy",
+        "NF-Crazy Volcano"
+      ],
+      "url": "https://github.com/Armchair-Heavy-Industries/A4T",
+      "description": "Lightweight toolhead for Voron 2.4 and Trident, accepts standalone extruders.",
+      "title": "A4T",
+      "image": "/A4T_render.webp",
+      "category": "Full Size Printers",
+      "configurator": true,
+      "hotend_fan": "2510",
+      "part_cooling_fan": [
+        "4010",
+        "2510"
+      ],
+      "filament_cutter": "native",
+      "_new_item_sources": {
+        "Clockwork2": "| :information_source: **Clockwork2 carriage/Tap users**: Don't forget the 2x M3x8 SHCS that go behind the adapter      | <img src='docs/images/extruder_adapter_cw2.png' width=150> |",
+        "NF-Crazy Volcano": "| 1   | Hotend                                        | Recommended hotend:<br/>*  **Dragon HF** with **Triangle Lab ZS-MZE-HF** (<a href=\"https://trianglelab.net/products/mze%E2%84%A2-dlc-v6-melt-zone-extruder\">trianglelab.net</a>)<img src='docs/images/DragonHF+MZE.png' width=120 alt=\"Dragon\" align='right'> <br/> Alternatives: <br/>* Chube Compact <br/>* Dragon UHF or UHF-Mini <br/>* Dragon Ace `use the included 3mm spacer`<br/>* Dragon Ace with MZE `use the included 3mm spacer`<br/>* Rapido HF or UHF<br/>* NF-Crazy Volcano `May melt plastic behind status LED without tape insulation` <br/>* Revo-Voron<br/>* Bambulab<br/>* TZ-V6-2.0 <br/><br/>`volcano blocks with oversize heater cartridges may require some insulation tape (aluminium/reflective) on the back of the LED housing that faces the hotend.`      |",
+        "Cartographer": "A printer that fits either Xol carriage, or a standard voron CW2 or Tap carriage. `NOT cartographer CNC carriage (see warning below)`<br/>",
+        "part_cooling_fan::2510": "| Lock the 2510 HE fan in place by sliding the HE fan duct up until the flexture locks.<br/>`\u26a0\ufe0f Careful, don't pinch any wires`| <img src='docs/images/2510_install2.png' width=150> |"
+      }
+    },
+    {
+      "name": "Crown Cooler",
+      "extruders": [
+        "Sherpa Mini",
+        "LGX-lite",
+        "Orbiter 2",
+        "HextrudORT",
+        "Clockwork1",
+        "Clockwork2",
+        "Vz HextrudORT"
+      ],
+      "probe": [
+        "Klicky",
+        "Euclid"
+      ],
+      "hotend": [
+        "Rapido UHF",
+        "Dragon SF",
+        "Rapido HF",
+        "Dragon HF"
+      ],
+      "url": "https://github.com/sneakytreesnake/CrownCooler",
+      "description": "Toolhead for Voron 2.4 and Trident, lightweight, features support for the Stealthburner X carriage, CPAP, standalone extruders, and UHF hotends.",
+      "category": "Full Size Printers",
+      "configurator": true,
+      "title": "Crown Cooler",
+      "image": "/crown_cooler.webp",
+      "hotend_fan": "4028",
+      "part_cooling_fan": "CPAP",
+      "filament_cutter": "unknown",
+      "_new_item_sources": {
+        "Vz HextrudORT": "After a lot of experimenting with other cooling designs such as the [Tentacool](https://github.com/MirageC79/HextrudORT/tree/main/files/COOLING/TENTACOOL), I plan on merging the ideas produced from the V2.5 cooler, with the ideas from the Tentacool. I don't want to give a release date as it's a slow process, but a release is on the hoizon."
+      }
+    },
+    {
+      "name": "DK's Monolith",
+      "extruders": [
+        "Sherpa Micro"
+      ],
+      "probe": "unknown",
+      "hotend": "unknown",
+      "url": "https://github.com/Kizime123/DKs-Monolith-Toolhead",
+      "description": "Toolhead for Monolith gantry.",
+      "category": "Full Size Printers",
+      "configurator": false,
+      "title": "DK's Monolith",
+      "image": "",
+      "hotend_fan": "unknown",
+      "part_cooling_fan": "CPAP",
+      "filament_cutter": "unknown",
+      "_new_item_sources": {
+        "part_cooling_fan::CPAP": "I intend to make some modified versions that have, improved CAD, a timeline (DK is a menance), Helicoil support, Regular BMG Support, PEEK tube lined filament path, 15/18mm CPAP tubing"
+      }
+    },
+    {
+      "name": "Dragon Burner",
+      "extruders": [
+        "Sherpa Mini",
+        "Sherpa Micro",
+        "Sailfin",
+        "Sharkfin",
+        "E3D Roto Vitamins",
+        "LGX-lite",
+        "Orbiter 2",
+        "Orbiter 1.5",
+        "Vz HextrudORT",
+        "Double Folded Ascender",
+        "RoundTrip",
+        "Galileo 2 Standalone",
+        "Wristwatch BMG",
+        "Wristwatch G2",
+        "Papilio Lite"
+      ],
+      "probe": [
+        "SlideSwipe",
+        "Unklicky",
+        "ZeroClick",
+        "Klicky",
+        "TAP",
+        "Boop"
+      ],
+      "hotend": [
+        "Dragon SF",
+        "Dragon HF",
+        "Dragonfly",
+        "Revo",
+        "Rapido HF",
+        "NF-Crazy",
+        "Creality Spider Pro",
+        "Bambu X1/P1",
+        "TaiChi",
+        "E3D V6",
+        "Red Lizard K1 HF",
+        "Red Lizard K1 UHF",
+        "Dragon Ace",
+        "Phaetus NeXt G HF",
+        "Phaetus NeXt G UHF",
+        "Chube",
+        "Rapido UHF",
+        "Dragon UHF"
+      ],
+      "url": "https://github.com/chirpy2605/voron/tree/main/V0/Dragon_Burner",
+      "description": "Lightweight toolhead for Printers for Ants.",
+      "title": "Dragon Burner",
+      "image": "/dragonburner.webp",
+      "category": "Printers for Ants",
+      "configurator": true,
+      "hotend_fan": [
+        "3010",
+        "2510"
+      ],
+      "part_cooling_fan": [
+        "4010",
+        "3010"
+      ],
+      "filament_cutter": "unknown",
+      "_new_item_sources": {
+        "Rapido UHF": "**NOTE**: The [Rapid Burner](https://github.com/chirpy2605/voron/tree/main/V0/Rapid_Burner) toolhead supports the Rapido UHF and Dragon UHF hotends.",
+        "Dragon UHF": "**NOTE**: The [Rapid Burner](https://github.com/chirpy2605/voron/tree/main/V0/Rapid_Burner) toolhead supports the Rapido UHF and Dragon UHF hotends.",
+        "part_cooling_fan::3010": "This toolhead improves the cooling of the hotend and provides much improved part cooling when printing filament that needs it (e.g. PLA). Designed to use 2 4010 blower fans for part cooling and a 3010 fan for hotend cooling."
+      }
+    },
+    {
+      "name": "Fibre Steam",
+      "extruders": [
+        "Galileo 2"
+      ],
+      "probe": "Beacon",
+      "hotend": [
+        "Rapido UHF",
+        "Dragon UHF",
+        "Rapido HF",
+        "Goliath"
+      ],
+      "url": "https://github.com/tristanmcpherson/fibresteam_wiki/tree/main",
+      "description": "Toolhead for Monolith gantry.",
+      "category": "Full Size Printers",
+      "configurator": false,
+      "title": "Fibre Steam",
+      "image": "",
+      "hotend_fan": "unknown",
+      "part_cooling_fan": "CPAP",
+      "filament_cutter": "unknown",
+      "_new_item_sources": {
+        "part_cooling_fan::CPAP": "Fibre Steam is a robust and high performance CPAP toolhead designed for the Monolith Gantry. Fibre Steam's variants integrate the extruder into the toolhead which allows for accurate CoM balancing for the toolhead. CoM and the overall stiffness of your toolhead is integral to achieving good input shapers for high performance printing."
+      }
+    },
+    {
+      "name": "Gustav",
+      "extruders": [
+        "Double Folded Ascender",
+        "Wristwatch G2",
+        "Wristwatch BMG",
+        "Micro-cosm",
+        "Sherpa Micro",
+        "Orbiter 2"
+      ],
+      "probe": [
+        "Beacon",
+        "Klicky"
+      ],
+      "hotend": [
+        "Dragon Ace",
+        "Rapido UHF",
+        "Goliath",
+        "Chube"
+      ],
+      "url": "https://github.com/RCI-Nicket/Gustav-Railway-Toolhead",
+      "description": "Toolhead for Monolith gantry, features support for CPAP, UHF hotends, and beacon probe.",
+      "category": "Full Size Printers",
+      "configurator": false,
+      "title": "Gustav",
+      "image": "",
+      "hotend_fan": "unknown",
+      "part_cooling_fan": "CPAP",
+      "filament_cutter": "unknown",
+      "_new_item_sources": {
+        "Sherpa Micro": "- Sherpa Micro Extruder [here](https://github.com/Annex-Engineering/Sherpa_Micro-Extruder/tree/main)",
+        "Orbiter 2": "- LDO Orbiter 2.0 [here](https://www.orbiterprojects.com/orbiter-v2-0/)",
+        "Rapido UHF": "- Rapido UHF(+)",
+        "Goliath": "- Goliath Water & Air",
+        "Chube": "- Chube AIR",
+        "Klicky": "- Klicky [here](https://github.com/jlas1/Klicky-Probe)",
+        "part_cooling_fan::CPAP": "- CPAP"
+      }
+    },
+    {
+      "name": "Jabberwocky",
+      "extruders": "other",
+      "probe": "unknown",
+      "hotend": [
+        "Conch",
+        "Revo"
+      ],
+      "url": "https://github.com/kinematicdigit/Jabberwocky",
+      "description": "Toolhead for Voron 2.4 and Trident, features support for filament changers.",
+      "category": "Full Size Printers",
+      "configurator": true,
+      "title": "Jabberwocky",
+      "image": "/Jabberwocky.webp",
+      "hotend_fan": "2510",
+      "part_cooling_fan": "3010",
+      "filament_cutter": "native",
+      "_new_item_sources": {
+        "Revo": "- Basic Jabberwocky Kit - This kit allows for self sourcing your own toolhead and tool-board. Great for users that might have the components. It gives flexibility for open development or advanced users who want to use different toolheads and different electronics. Examples like UHF Rapido or Revo toolheads are being actively developed/tested. Visit the discord channel to find out what third-party or independent users have created for the Basic Jabberwocky Kits."
+      }
+    },
+    {
+      "name": "Mailbox",
+      "extruders": [
+        "LGX-lite",
+        "Orbiter 1.5",
+        "RoundHouse",
+        "RoundTrip",
+        "RoundAbout"
+      ],
+      "probe": [
+        "SlideSwipe",
+        "ZeroClick",
+        "Unklicky",
+        "Klicky",
+        "TAP"
+      ],
+      "hotend": [
+        "Revo",
+        "Dragon SF",
+        "Dragon HF",
+        "Dragonfly",
+        "Rapido HF",
+        "Mellow Crazy Dragon",
+        "Dragon UHF",
+        "NF-Crazy"
+      ],
+      "url": "https://github.com/chirpy2605/voron/blob/main/V0/Mailbox",
+      "description": "Toolhead for Voron 0, features support for enhanced 5015 fan cooling.",
+      "category": "Printers for Ants",
+      "configurator": false,
+      "title": "Mailbox",
+      "image": "",
+      "hotend_fan": "3010",
+      "part_cooling_fan": "5015",
+      "filament_cutter": "unknown",
+      "_new_item_sources": {
+        "Klicky": "- [(Un)Klicky Probe](https://github.com/jlas1/Klicky-Probe)",
+        "TAP": "This toolhead should not lose any X or Z axis travel. There should be no Y axis loss on the v0.2, but on the v0.1 it may tap the door/tophat. Those with raised/square tophat/top frames should have no issues."
+      }
+    },
+    {
+      "name": "Mantis",
+      "extruders": [
+        "Sherpa Mini",
+        "Orbiter 2",
+        "Vz HextrudORT",
+        "Double Folded Ascender",
+        "LGX-Lite"
+      ],
+      "probe": [
+        "TAP",
+        "Beacon",
+        "Klicky PCB",
+        "Klicky",
+        "Euclid",
+        "Quickdraw",
+        "Unklicky"
+      ],
+      "hotend": [
+        "Rapido HF",
+        "Dragon SF",
+        "Dragon HF",
+        "Revo",
+        "Bambu X1/P1",
+        "Dragon UHF",
+        "NF-Crazy"
+      ],
+      "url": "https://github.com/Armchair-Heavy-Industries/Mantis-Xol",
+      "description": "Lightweight toolhead for Voron 2.4 and Trident, accepts standalone extruders.",
+      "category": "Full Size Printers",
+      "configurator": true,
+      "title": "Mantis",
+      "image": "/mantis.webp",
+      "hotend_fan": "2510",
+      "part_cooling_fan": "4010",
+      "filament_cutter": "unknown",
+      "boards": "SB2040",
+      "_new_item_sources": {
+        "Quickdraw": "- Quickdraw 2 support",
+        "Unklicky": "- The Klicky Probe carriage that was adapted was originally designed for the Dragon hotend. You'll need to use a taller probe body to reach the bed such as the one used by [Unklicky BFP](https://github.com/majarspeed/Unklicky). *This isn't an issue for Euclid or PCB Klicky*.",
+        "SB2040": "[Takuya](https://github.com/T4KUUY4)... just added the 36mm SB2040 mount"
+      }
+    },
+    {
+      "name": "Mini-Stealthdort",
+      "extruders": [
+        "Sherpa Mini",
+        "Sherpa Micro",
+        "Sailfin",
+        "Sharkfin",
+        "Orbiter 1.5",
+        "Orbiter 2",
+        "LGX-Lite",
+        "HextrudORT",
+        "Vz HextrudORT",
+        "Vorxtrudort"
+      ],
+      "probe": [
+        "Klicky",
+        "ZeroClick"
+      ],
+      "hotend": [
+        "Dragon HF",
+        "Dragonfly",
+        "Mosquito",
+        "Revo",
+        "Mellow NF-Zone"
+      ],
+      "url": "https://github.com/nhchiu/VoronMods/tree/main/V0/Toolhead",
+      "description": "Toolhead for Voron V0, features support for standalone extruders.",
+      "category": "Printers for Ants",
+      "configurator": true,
+      "title": "Mini-Stealthdort",
+      "image": "/Mini-Stealthdort.webp",
+      "hotend_fan": [
+        "3007",
+        "3010"
+      ],
+      "part_cooling_fan": "3010",
+      "filament_cutter": "unknown",
+      "_new_item_sources": {
+        "Vz HextrudORT": "| [Vz-Hextrudort](https://github.com/VzBoT3D/Vz-HextrudORT)                                                                                                                               | `Cowling.stl` and `Vz-Hextrudort_adapter.stl` |",
+        "Vorxtrudort": "| [Vorxtrudort](https://github.com/nhchiu/VoronMods/tree/main/Extruder)                                                                                                                   | `Cowling.stl`                                 |"
+      }
+    },
+    {
+      "name": "Rapid Burner",
+      "extruders": [
+        "Sherpa Mini",
+        "Sherpa Micro",
+        "Sailfin",
+        "Sharkfin",
+        "Orbiter 1.5",
+        "Orbiter 2",
+        "Vz HextrudORT",
+        "LGX-Lite",
+        "Double Folded Ascender",
+        "RoundTrip",
+        "Galileo 2 Standalone",
+        "E3D Roto Vitamins"
+      ],
+      "probe": [
+        "SlideSwipe",
+        "Unklicky",
+        "ZeroClick",
+        "Klicky",
+        "Boop",
+        "TAP"
+      ],
+      "hotend": [
+        "Rapido UHF",
+        "Dragon UHF",
+        "Goliath",
+        "E3D V6"
+      ],
+      "url": "https://github.com/chirpy2605/voron/tree/main/V0/Rapid_Burner",
+      "description": "Lightweight toolhead for Printers for Ants, variant of Dragonburner, features support for high flow hotends.",
+      "category": "Printers for Ants",
+      "configurator": true,
+      "title": "Rapid Burner",
+      "image": "/rapidburner.webp",
+      "hotend_fan": [
+        "3010",
+        "2510"
+      ],
+      "part_cooling_fan": [
+        "4010",
+        "3010"
+      ],
+      "filament_cutter": "unknown",
+      "_new_item_sources": {
+        "hotend_fan::2510": "- 2023-10-14 Modified 2510 hotend fan spacer",
+        "part_cooling_fan::3010": "Insert the fans. You will need to release the cable from the tabs on the front-end 3010 fan as well as the left part cooling 4010 fan. This is to allow the cable to be routed correctly. Care should be taken with the cables after doing this as too much movement could break off the wires from the fans. You can add cable relief with a dab of hot glue on the fan wire connections under the sticker."
+      }
+    },
+    {
+      "name": "Reaper",
+      "extruders": [
+        "Sherpa Mini",
+        "Orbiter 2",
+        "HextrudORT",
+        "LGX-Lite",
+        "Hummingbird",
+        "Galileo 2 Standalone",
+        "Vz HextrudORT"
+      ],
+      "probe": [
+        "TAP",
+        "Beacon",
+        "Cartographer",
+        "Klicky PCB"
+      ],
+      "hotend": [
+        "Dragon SF",
+        "Dragon HF",
+        "Dragon UHF",
+        "Rapido HF",
+        "Rapido UHF",
+        "Revo",
+        "Mosquito",
+        "Bambu X1/P1",
+        "Goliath"
+      ],
+      "url": "https://github.com/APDMachine/Reaper",
+      "description": "Toolhead for Voron 2.4 and Trident, inspired by Mantis.",
+      "category": "Full Size Printers",
+      "configurator": true,
+      "title": "Reaper",
+      "image": "/reaper.webp",
+      "hotend_fan": "3010",
+      "part_cooling_fan": [
+        "5015",
+        "3010"
+      ],
+      "filament_cutter": "unknown",
+      "_new_item_sources": {
+        "Vz HextrudORT": "- Hextrudort",
+        "part_cooling_fan::3010": "## Reaper uses a 3010 HE fan and dual 5015 part cooling fans."
+      }
+    },
+    {
+      "name": "StovePipe",
+      "extruders": [
+        "Orbiter 1.5",
+        "Sherpa Mini",
+        "RoundAbout",
+        "RoundHouseBMG",
+        "LGX-Lite",
+        "Sailfin"
+      ],
+      "probe": "ZeroClick",
+      "hotend": [
+        "NF-Crazy",
+        "Rapido UHF",
+        "Dragon UHF",
+        "Revo",
+        "Dragon SF",
+        "Dragonfly",
+        "Rapido HF"
+      ],
+      "url": "https://github.com/chirpy2605/voron/blob/main/V0/StovePipe",
+      "description": "Toolhead for Voron 0, features CPAP support.",
+      "category": "Printers for Ants",
+      "configurator": false,
+      "title": "StovePipe",
+      "image": "",
+      "hotend_fan": "unknown",
+      "part_cooling_fan": [
+        "CPAP",
+        "5015"
+      ],
+      "filament_cutter": "unknown",
+      "_new_item_sources": {
+        "part_cooling_fan::CPAP": "# Stove Pipe - a CPAP fan implementation for the Voron v0.1",
+        "part_cooling_fan::5015": "As a backup, you can also use a modified [MailBox Toolhead](https://github.com/waytotheweb/voron/blob/main/V0/5015_Toolhead) duct on the toolhead shroud and a 5015 fan! This can be swapped out without having to dismantle the toolhead."
+      }
+    },
+    {
+      "name": "Yavoth",
+      "extruders": [
+        "Sherpa Mini",
+        "Galileo 2 Standalone",
+        "E3D Roto Vitamins",
+        "Wristwatch BMG",
+        "Wristwatch G2",
+        "Sherpa Micro",
+        "Sharkfin",
+        "Sailfin",
+        "Dragon Ace",
+        "Orbiter 2"
+      ],
+      "probe": "unknown",
+      "hotend": [
+        "Rapido HF",
+        "Revo",
+        "Dragon UHF",
+        "Rapido UHF",
+        "Chube",
+        "Dragon Ace"
+      ],
+      "url": "https://github.com/chirpy2605/voron/blob/main/V0/Yavoth",
+      "description": "Toolhead for Voron 0 with support for HF and UHF hotends.",
+      "category": "Printers for Ants",
+      "configurator": true,
+      "title": "Yavoth",
+      "image": "/yavoth.webp",
+      "hotend_fan": [
+        "2510",
+        "4010",
+        "3010"
+      ],
+      "part_cooling_fan": [
+        "4010",
+        "2510"
+      ],
+      "filament_cutter": "unknown",
+      "_new_item_sources": {
+        "Dragon Ace": "- Dragon Ace (with ~3mm spacer)",
+        "hotend_fan::4010": "This is a toolhead for High and Ultra High Flow style hotends using angled 4010 part cooling fans and a 2510 hotend fan.",
+        "hotend_fan::3010": "It uses a 2510 hotend fan sighted at an advantageous height to offer improved hotend cooling performance compared to a 3010 hotend fan.",
+        "part_cooling_fan::2510": "This is a toolhead for High and Ultra High Flow style hotends using angled 4010 part cooling fans and a 2510 hotend fan."
+      }
+    },
+    {
+      "name": "Hypernova",
+      "extruders": [
+        "Sherpa Mini",
+        "LGX-lite",
+        "Orbiter 2",
+        "Galileo 2 Standalone",
+        "Wristwatch G2",
+        "Wristwatch BMG",
+        "Galileo 2"
+      ],
+      "probe": [
+        "Beacon",
+        "Cartographer",
+        "Klicky",
+        "Klicky PCB"
+      ],
+      "hotend": [
+        "TZ2.0",
+        "Dragon Ace",
+        "Red Lizard K1 UHF",
+        "Rapido HF",
+        "Rapido UHF",
+        "Red Lizard K1 HF",
+        "Red Lizard K1 UHF",
+        "Chube Air",
+        "Chube"
+      ],
+      "url": "https://hyperdrivedesign.com/products/Hypernova/hypernova/#hypernova-printhead",
+      "description": "Toolhead for Voron 2.4 and Trident, features a CNC metal plate for rigidity, support for UHF hotends, and accepts standalone extruders.",
+      "category": "Full Size Printers",
+      "configurator": true,
+      "title": "Hypernova",
+      "image": "/hypernova.webp",
+      "hotend_fan": "2510",
+      "part_cooling_fan": "4010",
+      "filament_cutter": "unknown",
+      "boards": "EBB36",
+      "_new_item_sources": {
+        "Galileo 2": "[G2SA]: https://github.com/JaredC01/Galileo2",
+        "Chube": "### Chube Hotend",
+        "Klicky PCB": "[Beacon], [Cartographer V3/V4], Klicky PCB soon",
+        "EBB36": "- [Download Can Bus Mount](https://github.com/Hyperdrive-Design/Hypernova/blob/main/STL/canbus-extruder_parts/sherpa_mini/EBB36%20Mount%20-%20Sherpa-Mini%20%5Bstrain%20relief%5D.stl?raw=true)"
+      }
+    },
+    {
+      "name": "Hypernova BSE",
+      "extruders": [
+        "Sherpa Mini",
+        "LGX-lite",
+        "Orbiter 2",
+        "Galileo 2 Standalone",
+        "Wristwatch G2",
+        "Wristwatch BMG",
+        "Galileo 2"
+      ],
+      "probe": [
+        "Beacon",
+        "Cartographer"
+      ],
+      "hotend": [
+        "Rapido UHF",
+        "Rapido HF",
+        "TZ2.0",
+        "Dragon Ace",
+        "Red Lizard K1 UHF",
+        "Chube Air",
+        "Chube"
+      ],
+      "url": "https://hyperdrivedesign.com/products/Hypernova/hypernova_bedsligers/",
+      "description": "Toolhead for Switchwire/Enderwire, features a CNC metal plate for rigidity, support for UHF hotends, and accepts standalone extruders.",
+      "category": "Full Size Printers",
+      "configurator": true,
+      "title": "Hypernova BSE",
+      "image": "/hypernova_bse.webp",
+      "hotend_fan": "2510",
+      "part_cooling_fan": "4010",
+      "filament_cutter": "unknown",
+      "boards": "EBB36",
+      "_new_item_sources": {
+        "Galileo 2": "[G2SA]: https://github.com/JaredC01/Galileo2",
+        "Chube": "### Chube Hotend",
+        "EBB36": "- [Download Can Bus Mount](https://github.com/Hyperdrive-Design/Hypernova/blob/switchwire/enderwire/STL/canbus-extruder_parts/sherpa_mini/EBB36%20Mount%20-%20Sherpa-Mini%20%5Bstrain%20relief%5D.stl?raw=true)"
+      }
+    }
+  ]
+}

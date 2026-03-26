@@ -41,3 +41,4 @@ python3 automated_scanner.py --once
 
 - Copy `.env.example` to `.env` in this folder if you want to keep using the legacy SMTP email flow.
 - The new root project is the Cloudflare Worker version intended for cron-triggered deployment.
+- Dashboard features such as the Toolhead Editor and GitHub PR creation are only available in the Cloudflare Worker version.
