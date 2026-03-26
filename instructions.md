@@ -51,6 +51,7 @@ Copy `.dev.vars.example` to `.dev.vars` and set values:
 - `NOTIFY_EMAIL_FROM`: sender address/domain configured in Resend
 - `NOTIFY_EMAIL_TO`: one or more recipient emails (comma-separated)
 - `TOOLHEAD_DATA_SOURCE_BASE` (optional): alternate upstream JSON source
+- `GITHUB_TOKEN` (optional for scanning, required for dashboard PR creation)
 
 Important: `.dev.vars` is only used by local development (`wrangler dev`). It is not used by the deployed Worker.
 
@@ -61,6 +62,7 @@ npx wrangler secret put MANUAL_RUN_TOKEN
 npx wrangler secret put RESEND_API_KEY
 npx wrangler secret put NOTIFY_EMAIL_FROM
 npx wrangler secret put NOTIFY_EMAIL_TO
+npx wrangler secret put GITHUB_TOKEN
 ```
 
 Set `NOTIFY_EMAIL_FROM` to a valid sender format, for example:
@@ -75,6 +77,8 @@ npx wrangler secret list
 ```
 
 Expected result: at least `MANUAL_RUN_TOKEN`, `RESEND_API_KEY`, `NOTIFY_EMAIL_FROM`, and `NOTIFY_EMAIL_TO` are listed.
+
+If you want dashboard PR creation, `GITHUB_TOKEN` must also be listed.
 
 If `wrangler secret list` returns `[]`, dashboard buttons and protected API calls will fail in production.
 
@@ -111,12 +115,14 @@ You can run the same flow manually through API or dashboard.
   - Run Scan (normal hash-aware run)
   - Run Full Recheck (ignores hash cache)
   - Extra location add/delete controls
+  - Toolhead Editor tab to modify toolhead metadata and create PRs
 
 If buttons appear to do nothing, check:
 
 - `npx wrangler secret list` is not empty
 - The token pasted in the dashboard matches the deployed `MANUAL_RUN_TOKEN` secret
 - You redeployed after updating config/secrets (`npm run deploy`)
+- For PR creation, verify `GITHUB_TOKEN` exists and has repo access to create forks/branches/PRs
 
 ### API
 
@@ -150,6 +156,8 @@ curl -X GET "https://YOUR_WORKER_DOMAIN/last-run" \
 - `POST /extra-locations`: add one location
 - `DELETE /extra-locations`: remove one location
 - `PUT /extra-locations`: replace full location list
+- `GET /api/reference-data`: get reference data used by dashboard editor
+- `POST /api/create-pr`: create ToolheadBuilder PR from dashboard edits
 
 ## 11. Troubleshooting
 
@@ -164,3 +172,7 @@ curl -X GET "https://YOUR_WORKER_DOMAIN/last-run" \
   - Ensure `RESEND_API_KEY`, `NOTIFY_EMAIL_FROM`, and `NOTIFY_EMAIL_TO` are configured
 - No changes detected unexpectedly:
   - Run `/run?recheck=1` to bypass hash skipping
+- PR creation returns `GITHUB_TOKEN is not configured`:
+  - Set `GITHUB_TOKEN` as a Worker secret and redeploy
+- PR creation fails with GitHub API errors:
+  - Ensure token has sufficient permissions for fork, branch, commit, and pull request operations

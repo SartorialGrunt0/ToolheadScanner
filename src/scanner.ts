@@ -51,6 +51,7 @@ export interface Env {
   RESEND_API_KEY?: string;
   NOTIFY_EMAIL_FROM?: string;
   NOTIFY_EMAIL_TO?: string;
+  GITHUB_TOKEN?: string;
 }
 
 type ToolheadField = string | string[] | null | undefined;
@@ -348,7 +349,7 @@ function hasNamedArray(value: unknown, key: string): boolean {
   return Array.isArray(entries);
 }
 
-async function loadReferenceData(log: (message: string) => void, dataSourceBase?: string): Promise<ReferenceData> {
+export async function loadReferenceData(log: (message: string) => void, dataSourceBase?: string): Promise<ReferenceData> {
   const base = dataSourceBase || DEFAULT_DATA_SOURCE_BASE;
   log(`Syncing reference data from ${base}`);
 
@@ -956,4 +957,28 @@ export async function runScan(env: Env, options: RunOptions): Promise<ScanReport
 export function getToolheadNames(seed: unknown = toolheadsSeed): string[] {
   const toolheads = (seed as { toolheads?: ToolheadEntry[] }).toolheads ?? [];
   return toolheads.map((entry) => entry.name).filter(Boolean).sort((left, right) => left.localeCompare(right));
+}
+
+export async function loadEditorData(dataSourceBase?: string): Promise<{
+  toolheads: ToolheadEntry[];
+  extruders: string[];
+  hotends: string[];
+  probes: string[];
+  boards: string[];
+  fans: string[];
+  filamentCutterOptions: string[];
+}> {
+  const ref = await loadReferenceData(() => {}, dataSourceBase);
+  const aliases = sanitizeAliases(aliasSeed);
+  const boardNames = [...new Set(Object.values(aliases.boards))].sort();
+
+  return {
+    toolheads: ref.toolheads,
+    extruders: ref.extruders.map((e) => e.name).sort(),
+    hotends: ref.hotends.map((e) => e.name).sort(),
+    probes: ref.probes.map((e) => e.name).sort(),
+    boards: boardNames,
+    fans: FAN_PATTERNS.map(([name]) => name),
+    filamentCutterOptions: ["unknown", "supported", "native", "unsupported"],
+  };
 }

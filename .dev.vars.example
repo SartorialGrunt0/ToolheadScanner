@@ -2,4 +2,5 @@ MANUAL_RUN_TOKEN=replace-with-a-long-random-token
 RESEND_API_KEY=re_xxxxxxxxxxxxxxxxx
 NOTIFY_EMAIL_FROM=Toolhead Scanner <scanner@example.com>
 NOTIFY_EMAIL_TO=you@example.com
+GITHUB_TOKEN=ghp_replace_with_github_token_for_pr_creation
 TOOLHEAD_DATA_SOURCE_BASE=https://raw.githubusercontent.com/SartorialGrunt0/ToolheadBuilder/main/src/data
