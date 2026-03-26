@@ -8,6 +8,7 @@ import {
   type Env,
   type ExtraLocation,
   type ScanReport,
+  type ToolheadEntry,
 } from "./scanner";
 
 const LAST_RUN_KEY = "last-run";
@@ -499,6 +500,165 @@ async function maybeSendNotification(env: Env, report: ScanReport): Promise<{ de
   return { delivered: true };
 }
 
+async function githubApi(
+  token: string,
+  method: string,
+  path: string,
+  body?: unknown,
+): Promise<{ status: number; data: Record<string, unknown> }> {
+  const response = await fetch(`https://api.github.com${path}`, {
+    method,
+    headers: {
+      authorization: `Bearer ${token}`,
+      accept: "application/vnd.github+json",
+      "content-type": "application/json",
+      "user-agent": "ToolheadScanner-Worker",
+      "x-github-api-version": "2022-11-28",
+    },
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+
+  const data = (await response.json()) as Record<string, unknown>;
+  return { status: response.status, data };
+}
+
+function buildPrBody(results: ScanReport["results"]): string {
+  const lines = [
+    "## Toolhead Scanner — automated update",
+    "",
+    `**${results.length}** toolhead(s) with new content detected:`,
+    "",
+  ];
+
+  for (const entry of results) {
+    lines.push(`### ${entry.name}`);
+
+    const sections: Array<[string, string[]]> = [
+      ["Extruders", entry.new_extruders],
+      ["Hotends", entry.new_hotends],
+      ["Probes", entry.new_probes],
+      ["Boards", entry.new_boards],
+      ["Hotend Fans", entry.new_hotend_fans],
+      ["Part Cooling Fans", entry.new_part_cooling_fans],
+    ];
+
+    for (const [label, items] of sections) {
+      if (items.length > 0) {
+        lines.push(`- **${label}:** ${items.join(", ")}`);
+      }
+    }
+
+    if (entry.new_filament_cutter) {
+      lines.push("- **Filament Cutter:** supported");
+    }
+
+    lines.push("");
+  }
+
+  lines.push("*This pull request was created automatically by the ToolheadScanner worker.*");
+  return lines.join("\n");
+}
+
+async function maybeCreatePullRequest(
+  env: Env,
+  report: ScanReport,
+): Promise<{ created: boolean; reason?: string; url?: string }> {
+  if (!report.ok || !report.changed || report.results.length === 0) {
+    return { created: false, reason: "No changes to propose." };
+  }
+
+  const token = env.GITHUB_TOKEN?.trim();
+  if (!token) {
+    return { created: false, reason: "GITHUB_TOKEN is not configured." };
+  }
+
+  const repoFullName = env.GITHUB_PR_REPO?.trim();
+  if (!repoFullName || !repoFullName.includes("/")) {
+    return { created: false, reason: "GITHUB_PR_REPO is not configured (expected owner/repo)." };
+  }
+
+  const [owner, repo] = repoFullName.split("/", 2);
+  const filePath = "src/data/toolheads.json";
+  const defaultBranch = "main";
+
+  // 1. Get the current toolheads.json content & SHA from the default branch
+  const fileRes = await githubApi(token, "GET", `/repos/${owner}/${repo}/contents/${filePath}?ref=${defaultBranch}`);
+  if (fileRes.status !== 200 || typeof fileRes.data.content !== "string" || typeof fileRes.data.sha !== "string") {
+    const msg = (fileRes.data.message as string) ?? `HTTP ${fileRes.status}`;
+    return { created: false, reason: `Failed to read ${filePath}: ${msg}` };
+  }
+
+  const existingContent = atob((fileRes.data.content as string).replace(/\n/g, ""));
+  const existing = JSON.parse(existingContent) as { toolheads: ToolheadEntry[] };
+
+  // 2. Merge updated toolheads into the existing data
+  const updatedMap = new Map(report.updatedPayload.toolheads.map((entry) => [entry.name, entry]));
+  const merged = existing.toolheads.map((entry) => {
+    const update = updatedMap.get(entry.name);
+    if (!update) {
+      return entry;
+    }
+    // Strip the internal tracking field before committing
+    const clean = { ...update };
+    delete clean._new_item_sources;
+    return clean;
+  });
+  const updatedJson = JSON.stringify({ toolheads: merged }, null, 2) + "\n";
+
+  // 3. Create a new branch from the default branch HEAD
+  const refRes = await githubApi(token, "GET", `/repos/${owner}/${repo}/git/ref/heads/${defaultBranch}`);
+  if (refRes.status !== 200 || !(refRes.data.object as Record<string, unknown>)?.sha) {
+    const msg = (refRes.data.message as string) ?? `HTTP ${refRes.status}`;
+    return { created: false, reason: `Failed to get HEAD ref: ${msg}` };
+  }
+  const baseSha = (refRes.data.object as Record<string, unknown>).sha as string;
+
+  const datestamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  const branchName = `toolhead-scanner/update-${datestamp}-${baseSha.slice(0, 7)}`;
+
+  const branchRes = await githubApi(token, "POST", `/repos/${owner}/${repo}/git/refs`, {
+    ref: `refs/heads/${branchName}`,
+    sha: baseSha,
+  });
+  if (branchRes.status !== 201) {
+    // 422 usually means branch already exists — still try to create the PR
+    if (branchRes.status !== 422) {
+      const msg = (branchRes.data.message as string) ?? `HTTP ${branchRes.status}`;
+      return { created: false, reason: `Failed to create branch: ${msg}` };
+    }
+  }
+
+  // 4. Update the file on the new branch
+  const toolheadNames = report.results.map((entry) => entry.name).join(", ");
+  const commitRes = await githubApi(token, "PUT", `/repos/${owner}/${repo}/contents/${filePath}`, {
+    message: `chore: update toolheads.json (${toolheadNames})`,
+    content: btoa(updatedJson),
+    sha: fileRes.data.sha,
+    branch: branchName,
+  });
+  if (commitRes.status !== 200 && commitRes.status !== 201) {
+    const msg = (commitRes.data.message as string) ?? `HTTP ${commitRes.status}`;
+    return { created: false, reason: `Failed to commit update: ${msg}` };
+  }
+
+  // 5. Open a pull request
+  const prTitle = `chore: update toolheads — ${report.changeCount} toolhead(s) changed`;
+  const prBody = buildPrBody(report.results);
+
+  const prRes = await githubApi(token, "POST", `/repos/${owner}/${repo}/pulls`, {
+    title: prTitle,
+    head: branchName,
+    base: defaultBranch,
+    body: prBody,
+  });
+  if (prRes.status !== 201) {
+    const msg = (prRes.data.message as string) ?? `HTTP ${prRes.status}`;
+    return { created: false, reason: `Failed to create pull request: ${msg}` };
+  }
+
+  return { created: true, url: prRes.data.html_url as string };
+}
+
 async function runAndPersist(env: Env, trigger: string, recheck = false): Promise<ScanReport> {
   const report = await runScan(env, {
     trigger,
@@ -515,6 +675,17 @@ async function runAndPersist(env: Env, trigger: string, recheck = false): Promis
     );
   } catch (error) {
     report.logs.push(`Notification error: ${error instanceof Error ? error.message : String(error)}`);
+  }
+
+  try {
+    const pr = await maybeCreatePullRequest(env, report);
+    report.logs.push(
+      pr.created
+        ? `Pull request created: ${pr.url}`
+        : `Pull request skipped: ${pr.reason ?? "unknown reason"}`,
+    );
+  } catch (error) {
+    report.logs.push(`Pull request error: ${error instanceof Error ? error.message : String(error)}`);
   }
 
   await saveLastRun(env, report);

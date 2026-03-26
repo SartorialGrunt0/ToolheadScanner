@@ -51,6 +51,8 @@ export interface Env {
   RESEND_API_KEY?: string;
   NOTIFY_EMAIL_FROM?: string;
   NOTIFY_EMAIL_TO?: string;
+  GITHUB_TOKEN?: string;
+  GITHUB_PR_REPO?: string;
 }
 
 type ToolheadField = string | string[] | null | undefined;
