@@ -53,6 +53,8 @@ Copy `.dev.vars.example` to `.dev.vars` and set values for:
 - `RESEND_API_KEY`: API key used for notifications
 - `NOTIFY_EMAIL_FROM`: sender address accepted by Resend
 - `NOTIFY_EMAIL_TO`: one or more recipient addresses, comma-separated
+- `GITHUB_TOKEN`: GitHub personal access token with `contents:write` and `pull_requests:write` scopes (optional, enables automatic PR creation)
+- `GITHUB_PR_REPO`: target repository in `owner/repo` format (e.g. `SartorialGrunt0/ToolheadBuilder`)
 
 ### 4. Configure production secrets
 
@@ -61,7 +63,11 @@ npx wrangler secret put MANUAL_RUN_TOKEN
 npx wrangler secret put RESEND_API_KEY
 npx wrangler secret put NOTIFY_EMAIL_FROM
 npx wrangler secret put NOTIFY_EMAIL_TO
+npx wrangler secret put GITHUB_TOKEN
+npx wrangler secret put GITHUB_PR_REPO
 ```
+
+`GITHUB_TOKEN` and `GITHUB_PR_REPO` are optional. When both are configured, the scanner will automatically open a pull request against the target repository with updated `toolheads.json` whenever new content is detected. If either is missing, PR creation is skipped silently.
 
 If you want to change the upstream ToolheadBuilder data source, set `TOOLHEAD_DATA_SOURCE_BASE` in `wrangler.jsonc` or as an environment variable.
 
@@ -131,6 +137,7 @@ Each scan run does the following:
 5. Parses new extruders, hotends, probes, boards, fans, and filament cutter support.
 6. Stores the last scan report in KV.
 7. Sends a notification email when changes are found and notification settings are configured.
+8. Opens a pull request with the updated `toolheads.json` on the target repository when changes are found and GitHub settings are configured.
 
 ## Legacy Python version
 

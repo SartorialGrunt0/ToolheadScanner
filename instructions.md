@@ -51,6 +51,8 @@ Copy `.dev.vars.example` to `.dev.vars` and set values:
 - `NOTIFY_EMAIL_FROM`: sender address/domain configured in Resend
 - `NOTIFY_EMAIL_TO`: one or more recipient emails (comma-separated)
 - `TOOLHEAD_DATA_SOURCE_BASE` (optional): alternate upstream JSON source
+- `GITHUB_TOKEN` (optional): GitHub personal access token with `contents:write` and `pull_requests:write` scopes
+- `GITHUB_PR_REPO` (optional): target repository for automatic PRs in `owner/repo` format (e.g. `SartorialGrunt0/ToolheadBuilder`)
 
 Important: `.dev.vars` is only used by local development (`wrangler dev`). It is not used by the deployed Worker.
 
@@ -61,7 +63,11 @@ npx wrangler secret put MANUAL_RUN_TOKEN
 npx wrangler secret put RESEND_API_KEY
 npx wrangler secret put NOTIFY_EMAIL_FROM
 npx wrangler secret put NOTIFY_EMAIL_TO
+npx wrangler secret put GITHUB_TOKEN
+npx wrangler secret put GITHUB_PR_REPO
 ```
+
+`GITHUB_TOKEN` and `GITHUB_PR_REPO` are optional. When both are set, the scanner will automatically open a pull request with updated `toolheads.json` on the target repository whenever new content is detected. The token needs `contents:write` and `pull_requests:write` scopes. If either variable is missing, PR creation is skipped and logged.
 
 Set `NOTIFY_EMAIL_FROM` to a valid sender format, for example:
 
@@ -74,7 +80,7 @@ Then verify secrets were saved in Cloudflare:
 npx wrangler secret list
 ```
 
-Expected result: at least `MANUAL_RUN_TOKEN`, `RESEND_API_KEY`, `NOTIFY_EMAIL_FROM`, and `NOTIFY_EMAIL_TO` are listed.
+Expected result: at least `MANUAL_RUN_TOKEN`, `RESEND_API_KEY`, `NOTIFY_EMAIL_FROM`, and `NOTIFY_EMAIL_TO` are listed. `GITHUB_TOKEN` and `GITHUB_PR_REPO` will also appear if you configured automatic PR creation.
 
 If `wrangler secret list` returns `[]`, dashboard buttons and protected API calls will fail in production.
 
@@ -98,6 +104,7 @@ On each cron run, the Worker:
 5. Parses for new extruders, hotends, probes, boards, fan data, and filament cutter support.
 6. Stores a full run report in SCANNER_STATE under `last-run`.
 7. Sends notification email when changes are detected and email settings are configured.
+8. Opens a pull request with the updated `toolheads.json` on the target repository when changes are detected and `GITHUB_TOKEN`/`GITHUB_PR_REPO` are configured.
 
 ## 9. Manual operations
 
@@ -164,3 +171,8 @@ curl -X GET "https://YOUR_WORKER_DOMAIN/last-run" \
   - Ensure `RESEND_API_KEY`, `NOTIFY_EMAIL_FROM`, and `NOTIFY_EMAIL_TO` are configured
 - No changes detected unexpectedly:
   - Run `/run?recheck=1` to bypass hash skipping
+- No pull request created:
+  - Ensure both `GITHUB_TOKEN` and `GITHUB_PR_REPO` are set
+  - `GITHUB_PR_REPO` must be in `owner/repo` format
+  - The token needs `contents:write` and `pull_requests:write` scopes on the target repository
+  - Check the `last-run` report logs for detailed PR creation status or error messages
