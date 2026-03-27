@@ -555,14 +555,14 @@ function dashboardHtml(): string {
     var editorData = null;
     var workingToolheads = [];
     var selectedIdx = -1;
-    var pendingImage = null;
+    var pendingImages = {};
 
     var FIELD_META = {
       name: { type: "text", label: "Name" },
       title: { type: "text", label: "Title" },
       url: { type: "text", label: "URL" },
       description: { type: "text", label: "Description" },
-      category: { type: "text", label: "Category" },
+      category: { type: "enum", label: "Category", optionsKey: "categoryOptions" },
       image: { type: "image", label: "Image" },
       configurator: { type: "boolean", label: "Configurator" },
       extruders: { type: "list", label: "Extruders", optionsKey: "extruders" },
@@ -806,14 +806,41 @@ function dashboardHtml(): string {
       fi.addEventListener("change", function() {
         var f = fi.files[0];
         if (!f) return;
-        var r = new FileReader();
-        r.onload = function() {
-          pendingImage = { filename: f.name, content: r.result.split(",")[1] };
-          workingToolheads[selectedIdx].image = "/" + f.name;
-          editorRender();
-          setStatus("Image staged: " + f.name, "ok");
+        var th = workingToolheads[selectedIdx];
+        var toolheadName = th.name.replace(/[^a-zA-Z0-9_-]/g, "_");
+        var destFilename = toolheadName + ".webp";
+        setStatus("Optimizing image...", null);
+
+        var img = new Image();
+        img.onload = function() {
+          var MAX_WIDTH = 1200;
+          var w = img.width;
+          var h = img.height;
+          if (w > MAX_WIDTH) {
+            h = Math.round(h * MAX_WIDTH / w);
+            w = MAX_WIDTH;
+          }
+          var canvas = document.createElement("canvas");
+          canvas.width = w;
+          canvas.height = h;
+          var ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, w, h);
+          canvas.toBlob(function(blob) {
+            var reader = new FileReader();
+            reader.onload = function() {
+              pendingImages[selectedIdx] = { filename: destFilename, content: reader.result.split(",")[1] };
+              th.image = "/" + destFilename;
+              editorRender();
+              setStatus("Image staged: " + destFilename + " (optimized to WebP)", "ok");
+            };
+            reader.readAsDataURL(blob);
+          }, "image/webp", 0.80);
         };
-        r.readAsDataURL(f);
+        img.onerror = function() {
+          setStatus("Failed to load image for optimization.", "error");
+        };
+        var objectUrl = URL.createObjectURL(f);
+        img.src = objectUrl;
       });
       fi.click();
     }
@@ -852,8 +879,14 @@ function dashboardHtml(): string {
       if (!workingToolheads.length) return;
       setStatus("Creating pull request...", null);
       try {
+        var images = [];
+        for (var key in pendingImages) {
+          if (pendingImages.hasOwnProperty(key)) {
+            images.push(pendingImages[key]);
+          }
+        }
         var body = { toolheads: workingToolheads };
-        if (pendingImage) body.image = pendingImage;
+        if (images.length) body.images = images;
         var res = await requestJson("/api/create-pr", {
           method: "POST",
           headers: authHeaders(true),
@@ -866,7 +899,7 @@ function dashboardHtml(): string {
           '<div class="row" style="margin-top:12px;"><button id="modalDone">Close</button></div>'
         );
         document.getElementById("modalDone").addEventListener("click", closeModal);
-        pendingImage = null;
+        pendingImages = {};
       } catch (err) {
         setStatus("PR failed: " + err.message, "error");
       }
@@ -1032,7 +1065,7 @@ async function handleReferenceData(env: Env): Promise<Response> {
 async function createToolheadPR(
   env: Env,
   toolheads: ToolheadEntry[],
-  options?: { message?: string; image?: { filename: string; content: string } },
+  options?: { message?: string; images?: Array<{ filename: string; content: string }> },
 ): Promise<{ pr_url: string; pr_number: number; branch: string }> {
   const githubToken = env.GITHUB_TOKEN?.trim();
   if (!githubToken) {
@@ -1116,14 +1149,18 @@ async function createToolheadPR(
     { path: FILE_PATH, mode: "100644", type: "blob", sha: fileBlob.sha as string },
   ];
 
-  // 8. Optional image upload
-  if (options?.image?.content && options?.image?.filename) {
-    const sanitized = options.image.filename.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const imageBlob = await gh(`/repos/${forkOwner}/${UPSTREAM_REPO}/git/blobs`, {
-      method: "POST",
-      body: JSON.stringify({ content: options.image.content, encoding: "base64" }),
-    });
-    treeEntries.push({ path: `public/${sanitized}`, mode: "100644", type: "blob", sha: imageBlob.sha as string });
+  // 8. Upload image blobs
+  if (options?.images && options.images.length > 0) {
+    for (const img of options.images) {
+      if (img.content && img.filename) {
+        const sanitized = img.filename.replace(/[^a-zA-Z0-9._-]/g, "_");
+        const imageBlob = await gh(`/repos/${forkOwner}/${UPSTREAM_REPO}/git/blobs`, {
+          method: "POST",
+          body: JSON.stringify({ content: img.content, encoding: "base64" }),
+        });
+        treeEntries.push({ path: `public/${sanitized}`, mode: "100644", type: "blob", sha: imageBlob.sha as string });
+      }
+    }
   }
 
   // 9. Get base commit tree
@@ -1167,13 +1204,13 @@ async function handleCreatePR(request: Request, env: Env): Promise<Response> {
   const payload = (await request.json()) as {
     toolheads: ToolheadEntry[];
     message?: string;
-    image?: { filename: string; content: string };
+    images?: Array<{ filename: string; content: string }>;
   };
 
   try {
     const result = await createToolheadPR(env, payload.toolheads, {
       message: payload.message,
-      image: payload.image,
+      images: payload.images,
     });
     return jsonResponse(result);
   } catch (error) {
