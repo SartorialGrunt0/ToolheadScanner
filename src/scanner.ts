@@ -967,6 +967,7 @@ export async function loadEditorData(dataSourceBase?: string): Promise<{
   boards: string[];
   fans: string[];
   filamentCutterOptions: string[];
+  categoryOptions: string[];
 }> {
   const ref = await loadReferenceData(() => {}, dataSourceBase);
   const aliases = sanitizeAliases(aliasSeed);
@@ -979,6 +980,7 @@ export async function loadEditorData(dataSourceBase?: string): Promise<{
     probes: ref.probes.map((e) => e.name).sort(),
     boards: boardNames,
     fans: FAN_PATTERNS.map(([name]) => name),
-    filamentCutterOptions: ["unknown", "supported", "native", "unsupported"],
+    filamentCutterOptions: ["native", "mod", "unknown", "unsupported"],
+    categoryOptions: ["Printers for Ants", "Full Size Printers"],
   };
 }
