@@ -1066,10 +1066,13 @@ function dashboardHtml(): string {
           var fname = document.getElementById("newFieldName").value.trim();
           var ftype = document.getElementById("newFieldType").value;
           if (!fname) { setStatus("Field name is required.", "error"); return; }
+          // Field keys are snake_case to match JSON conventions
           var fieldKey = fname.toLowerCase().replace(/[^a-z0-9_]/g, "_");
           if (fieldMeta[fieldKey]) { setStatus("Field '" + fieldKey + "' already exists.", "error"); return; }
 
           var newMeta = { type: ftype, label: fname };
+          // _self: collect unique values from all items for list picking (modify)
+          // _self_enum: collect unique values from all items for dropdown selection (change)
           if (ftype === "modify") newMeta.optionsKey = "_self";
           if (ftype === "change") newMeta.optionsKey = "_self_enum";
           fieldMeta[fieldKey] = newMeta;
