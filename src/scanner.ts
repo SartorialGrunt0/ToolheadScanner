@@ -71,8 +71,9 @@ export interface ToolheadEntry {
   [key: string]: unknown;
 }
 
-interface NamedEntry {
+export interface NamedEntry {
   name: string;
+  [key: string]: unknown;
 }
 
 interface ReferenceData {
@@ -961,9 +962,12 @@ export function getToolheadNames(seed: unknown = toolheadsSeed): string[] {
 
 export async function loadEditorData(dataSourceBase?: string): Promise<{
   toolheads: ToolheadEntry[];
-  extruders: string[];
-  hotends: string[];
-  probes: string[];
+  extruderNames: string[];
+  hotendNames: string[];
+  probeNames: string[];
+  extruders: NamedEntry[];
+  hotends: NamedEntry[];
+  probes: NamedEntry[];
   boards: string[];
   fans: string[];
   filamentCutterOptions: string[];
@@ -975,9 +979,12 @@ export async function loadEditorData(dataSourceBase?: string): Promise<{
 
   return {
     toolheads: ref.toolheads,
-    extruders: ref.extruders.map((e) => e.name).sort(),
-    hotends: ref.hotends.map((e) => e.name).sort(),
-    probes: ref.probes.map((e) => e.name).sort(),
+    extruderNames: ref.extruders.map((e) => e.name).sort(),
+    hotendNames: ref.hotends.map((e) => e.name).sort(),
+    probeNames: ref.probes.map((e) => e.name).sort(),
+    extruders: ref.extruders,
+    hotends: ref.hotends,
+    probes: ref.probes,
     boards: boardNames,
     fans: FAN_PATTERNS.map(([name]) => name),
     filamentCutterOptions: ["native", "mod", "unknown", "unsupported"],

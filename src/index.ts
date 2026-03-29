@@ -8,6 +8,7 @@ import {
   saveExtraLocations,
   type Env,
   type ExtraLocation,
+  type NamedEntry,
   type ScanReport,
   type ToolheadEntry,
 } from "./scanner";
@@ -295,7 +296,7 @@ function dashboardHtml(): string {
 
     <div class="tabs">
       <button class="tab-btn active" data-tab="scanner">Scanner</button>
-      <button class="tab-btn" data-tab="editor">Toolhead Editor</button>
+      <button class="tab-btn" data-tab="editor">Data Editor</button>
     </div>
 
     <div id="tab-scanner" class="tab-content active">
@@ -333,14 +334,21 @@ function dashboardHtml(): string {
 
     <div id="tab-editor" class="tab-content">
       <section class="card">
-        <h2>Toolhead Editor</h2>
+        <h2>Data Editor</h2>
         <div class="editor-toolbar">
-          <select id="editorSelect"><option value="">-- Load reference data first --</option></select>
+          <select id="editorCategory">
+            <option value="toolheads">Toolheads</option>
+            <option value="extruders">Extruders</option>
+            <option value="hotends">Hotends</option>
+            <option value="probes">Probes</option>
+          </select>
+          <select id="editorSelect"><option value="">-- Load data first --</option></select>
           <button id="editorNewBtn">+ New</button>
+          <button id="editorFieldsBtn" class="ghost">Manage Fields</button>
           <button id="editorLoadBtn" class="alt">Load Data</button>
           <button id="editorPRBtn" class="ghost" disabled>Create Pull Request</button>
         </div>
-        <div id="editorDetail"><p class="small">Click "Load Data" to fetch the current toolhead reference data.</p></div>
+        <div id="editorDetail"><p class="small">Click "Load Data" to fetch the current reference data.</p></div>
       </section>
     </div>
   </div>
@@ -551,31 +559,71 @@ function dashboardHtml(): string {
     document.getElementById("addLocation").addEventListener("click", addLocation);
     document.getElementById("refreshLocations").addEventListener("click", loadLocations);
 
-    // --- Toolhead Editor ---
+    // --- Data Editor ---
     var editorData = null;
-    var workingToolheads = [];
+    var workingData = { toolheads: [], extruders: [], hotends: [], probes: [] };
+    var currentCategory = "toolheads";
     var selectedIdx = -1;
     var pendingImages = {};
 
-    var FIELD_META = {
-      name: { type: "text", label: "Name" },
-      title: { type: "text", label: "Title" },
-      url: { type: "text", label: "URL" },
-      description: { type: "text", label: "Description" },
-      category: { type: "enum", label: "Category", optionsKey: "categoryOptions" },
-      image: { type: "image", label: "Image" },
-      configurator: { type: "boolean", label: "Configurator" },
-      extruders: { type: "list", label: "Extruders", optionsKey: "extruders" },
-      hotend: { type: "list", label: "Hotends", optionsKey: "hotends" },
-      probe: { type: "list", label: "Probes", optionsKey: "probes" },
-      boards: { type: "list", label: "Boards", optionsKey: "boards" },
-      hotend_fan: { type: "list", label: "Hotend Fan", optionsKey: "fans" },
-      part_cooling_fan: { type: "list", label: "Part Cooling Fan", optionsKey: "fans" },
-      filament_cutter: { type: "enum", label: "Filament Cutter", optionsKey: "filamentCutterOptions" }
+    var CATEGORY_FIELD_META = {
+      toolheads: {
+        name: { type: "edit", label: "Name" },
+        title: { type: "edit", label: "Title" },
+        url: { type: "edit", label: "URL" },
+        description: { type: "edit", label: "Description" },
+        category: { type: "change", label: "Category", optionsKey: "categoryOptions" },
+        image: { type: "image", label: "Image" },
+        configurator: { type: "toggle", label: "Configurator" },
+        extruders: { type: "modify", label: "Extruders", optionsKey: "extruderNames" },
+        hotend: { type: "modify", label: "Hotends", optionsKey: "hotendNames" },
+        probe: { type: "modify", label: "Probes", optionsKey: "probeNames" },
+        boards: { type: "modify", label: "Boards", optionsKey: "boards" },
+        hotend_fan: { type: "modify", label: "Hotend Fan", optionsKey: "fans" },
+        part_cooling_fan: { type: "modify", label: "Part Cooling Fan", optionsKey: "fans" },
+        filament_cutter: { type: "change", label: "Filament Cutter", optionsKey: "filamentCutterOptions" }
+      },
+      extruders: {
+        name: { type: "edit", label: "Name" },
+        mounting_pattern: { type: "edit", label: "Mounting Pattern" },
+        gear_type: { type: "edit", label: "Gear Type" },
+        url: { type: "edit", label: "URL" },
+        description: { type: "edit", label: "Description" },
+        filament_sensor: { type: "edit", label: "Filament Sensor" },
+        top_pick: { type: "toggle", label: "Top Pick" }
+      },
+      hotends: {
+        name: { type: "edit", label: "Name" },
+        mounting_pattern: { type: "modify", label: "Mounting Pattern", optionsKey: "_self" },
+        length: { type: "edit", label: "Length" },
+        meltzone_length: { type: "edit", label: "Meltzone Length" },
+        hotend_type: { type: "edit", label: "Hotend Type" },
+        flow_rate: { type: "edit", label: "Flow Rate" },
+        nozzle_compatibility: { type: "modify", label: "Nozzle Compatibility", optionsKey: "_self" },
+        url: { type: "edit", label: "URL" },
+        description: { type: "edit", label: "Description" },
+        top_pick: { type: "toggle", label: "Top Pick" }
+      },
+      probes: {
+        name: { type: "edit", label: "Name" },
+        type: { type: "change", label: "Type", optionsKey: "_self_enum" },
+        url: { type: "edit", label: "URL" },
+        description: { type: "edit", label: "Description" },
+        top_pick: { type: "toggle", label: "Top Pick" }
+      }
     };
 
-    var FIELD_ORDER = ["name", "title", "url", "description", "category", "image", "configurator",
-      "extruders", "hotend", "probe", "boards", "hotend_fan", "part_cooling_fan", "filament_cutter"];
+    var CATEGORY_FIELD_ORDER = {
+      toolheads: ["name", "title", "url", "description", "category", "image", "configurator",
+        "extruders", "hotend", "probe", "boards", "hotend_fan", "part_cooling_fan", "filament_cutter"],
+      extruders: ["name", "mounting_pattern", "gear_type", "url", "description", "filament_sensor", "top_pick"],
+      hotends: ["name", "mounting_pattern", "length", "meltzone_length", "hotend_type", "flow_rate", "nozzle_compatibility", "url", "description", "top_pick"],
+      probes: ["name", "type", "url", "description", "top_pick"]
+    };
+
+    function getFieldMeta() { return CATEGORY_FIELD_META[currentCategory] || {}; }
+    function getFieldOrder() { return CATEGORY_FIELD_ORDER[currentCategory] || []; }
+    function getWorkingItems() { return workingData[currentCategory] || []; }
 
     function toArray(v) {
       if (v === null || v === undefined) return [];
@@ -600,25 +648,61 @@ function dashboardHtml(): string {
       return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
     }
 
-    function getField(th, key) {
-      if (key === "hotend_fan" && th.hotend_fans !== undefined) return th.hotend_fans;
-      if (key === "part_cooling_fan" && th.part_cooling_fans !== undefined) return th.part_cooling_fans;
-      return th[key];
+    function getField(item, key) {
+      if (currentCategory === "toolheads") {
+        if (key === "hotend_fan" && item.hotend_fans !== undefined) return item.hotend_fans;
+        if (key === "part_cooling_fan" && item.part_cooling_fans !== undefined) return item.part_cooling_fans;
+      }
+      return item[key];
     }
 
-    function setField(th, key, val) {
-      if (key === "hotend_fan" && "hotend_fans" in th) { th.hotend_fans = val; return; }
-      if (key === "part_cooling_fan" && "part_cooling_fans" in th) { th.part_cooling_fans = val; return; }
-      th[key] = val;
+    function setField(item, key, val) {
+      if (currentCategory === "toolheads") {
+        if (key === "hotend_fan" && "hotend_fans" in item) { item.hotend_fans = val; return; }
+        if (key === "part_cooling_fan" && "part_cooling_fans" in item) { item.part_cooling_fans = val; return; }
+      }
+      item[key] = val;
+    }
+
+    function collectFieldValues(key) {
+      var items = getWorkingItems();
+      var vals = new Set();
+      for (var i = 0; i < items.length; i++) {
+        var v = getField(items[i], key);
+        if (Array.isArray(v)) {
+          for (var j = 0; j < v.length; j++) {
+            if (v[j] && !isPlaceholder(v[j])) vals.add(String(v[j]));
+          }
+        } else if (v && !isPlaceholder(v)) {
+          vals.add(String(v));
+        }
+      }
+      return Array.from(vals).sort();
+    }
+
+    function getOptionsForKey(key) {
+      var meta = getFieldMeta()[key];
+      if (!meta) return [];
+      if (meta.optionsKey === "_self") return collectFieldValues(key);
+      if (meta.optionsKey === "_self_enum") return collectFieldValues(key);
+      if (meta.optionsKey && editorData && editorData[meta.optionsKey]) return editorData[meta.optionsKey];
+      return [];
     }
 
     async function editorLoad() {
       setStatus("Loading reference data...", null);
       try {
         editorData = await requestJson("/api/reference-data", { method: "GET", headers: authHeaders(false) });
-        workingToolheads = JSON.parse(JSON.stringify(editorData.toolheads));
+        workingData = {
+          toolheads: JSON.parse(JSON.stringify(editorData.toolheads)),
+          extruders: JSON.parse(JSON.stringify(editorData.extruders)),
+          hotends: JSON.parse(JSON.stringify(editorData.hotends)),
+          probes: JSON.parse(JSON.stringify(editorData.probes))
+        };
         editorPopulate();
-        setStatus("Reference data loaded (" + workingToolheads.length + " toolheads).", "ok");
+        var cat = currentCategory;
+        var count = (workingData[cat] || []).length;
+        setStatus("Data loaded (" + count + " " + cat + ").", "ok");
       } catch (err) {
         setStatus("Failed to load reference data: " + err.message, "error");
       }
@@ -626,12 +710,13 @@ function dashboardHtml(): string {
 
     function editorPopulate() {
       var sel = document.getElementById("editorSelect");
-      sel.innerHTML = '<option value="">-- Select a toolhead --</option>';
-      workingToolheads.sort(function(a, b) { return a.name.localeCompare(b.name); });
-      for (var i = 0; i < workingToolheads.length; i++) {
+      var items = getWorkingItems();
+      sel.innerHTML = '<option value="">-- Select ' + currentCategory.replace(/s$/, "") + ' --</option>';
+      items.sort(function(a, b) { return (a.name || "").localeCompare(b.name || ""); });
+      for (var i = 0; i < items.length; i++) {
         var o = document.createElement("option");
         o.value = String(i);
-        o.textContent = workingToolheads[i].name;
+        o.textContent = items[i].name;
         sel.appendChild(o);
       }
       selectedIdx = -1;
@@ -640,20 +725,25 @@ function dashboardHtml(): string {
 
     function editorRender() {
       var c = document.getElementById("editorDetail");
-      if (selectedIdx < 0 || selectedIdx >= workingToolheads.length) {
-        c.innerHTML = '<p class="small">Select a toolhead or click "+ New" to create one.</p>';
+      var items = getWorkingItems();
+      if (selectedIdx < 0 || selectedIdx >= items.length) {
+        c.innerHTML = '<p class="small">Select an item or click "+ New" to create one.</p>';
         document.getElementById("editorPRBtn").disabled = true;
         return;
       }
       document.getElementById("editorPRBtn").disabled = false;
-      var th = workingToolheads[selectedIdx];
+      var item = items[selectedIdx];
+      var fieldMeta = getFieldMeta();
+      var fieldOrder = getFieldOrder();
       var h = '<div class="field-grid">';
-      for (var i = 0; i < FIELD_ORDER.length; i++) {
-        var key = FIELD_ORDER[i];
-        var meta = FIELD_META[key];
-        var val = getField(th, key);
-        h += '<div class="field-row"><div class="field-label">' + meta.label + '</div><div class="field-value">';
-        if (meta.type === "list") {
+
+      for (var i = 0; i < fieldOrder.length; i++) {
+        var key = fieldOrder[i];
+        var meta = fieldMeta[key];
+        if (!meta) continue;
+        var val = getField(item, key);
+        h += '<div class="field-row"><div class="field-label">' + esc(meta.label) + '</div><div class="field-value">';
+        if (meta.type === "modify") {
           var arr = toArray(val);
           if (!arr.length) { h += '<span class="text-val empty">none</span>'; }
           else {
@@ -663,20 +753,33 @@ function dashboardHtml(): string {
             }
             h += '</div>';
           }
-        } else if (meta.type === "boolean") {
+        } else if (meta.type === "toggle") {
           h += '<span class="text-val">' + (val ? "true" : "false") + '</span>';
-        } else if (meta.type === "enum") {
+        } else if (meta.type === "change") {
           h += '<span class="text-val">' + esc(String(val || "unknown")) + '</span>';
         } else {
           h += val ? '<span class="text-val">' + esc(String(val)) + '</span>' : '<span class="text-val empty">empty</span>';
         }
         h += '</div><div class="field-actions">';
-        if (meta.type === "list") h += '<button class="ghost btn-sm" data-modify="' + key + '">Modify</button>';
-        else if (meta.type === "boolean") h += '<button class="ghost btn-sm" data-toggle="' + key + '">Toggle</button>';
-        else if (meta.type === "enum") h += '<button class="ghost btn-sm" data-enum="' + key + '">Change</button>';
+        if (meta.type === "modify") h += '<button class="ghost btn-sm" data-modify="' + key + '">Modify</button>';
+        else if (meta.type === "toggle") h += '<button class="ghost btn-sm" data-toggle="' + key + '">Toggle</button>';
+        else if (meta.type === "change") h += '<button class="ghost btn-sm" data-enum="' + key + '">Change</button>';
         else if (meta.type === "image") h += '<button class="ghost btn-sm" data-edit="' + key + '">Edit</button> <button class="ghost btn-sm" data-upload="image">Upload</button>';
         else h += '<button class="ghost btn-sm" data-edit="' + key + '">Edit</button>';
         h += '</div></div>';
+      }
+
+      var allKeys = Object.keys(item);
+      for (var k = 0; k < allKeys.length; k++) {
+        var aKey = allKeys[k];
+        if (fieldOrder.indexOf(aKey) >= 0) continue;
+        if (currentCategory === "toolheads" && (aKey === "hotend_fans" || aKey === "part_cooling_fans")) continue;
+        var aVal = item[aKey];
+        var displayVal = aVal;
+        if (Array.isArray(aVal)) displayVal = aVal.join(", ");
+        h += '<div class="field-row"><div class="field-label">' + esc(aKey) + '</div><div class="field-value">';
+        h += '<span class="text-val">' + esc(String(displayVal == null ? "" : displayVal)) + '</span>';
+        h += '</div><div class="field-actions"><button class="ghost btn-sm" data-edit="' + esc(aKey) + '">Edit</button></div></div>';
       }
       h += '</div>';
       c.innerHTML = h;
@@ -690,7 +793,8 @@ function dashboardHtml(): string {
       c.querySelectorAll("[data-toggle]").forEach(function(b) {
         b.addEventListener("click", function() {
           var k = b.getAttribute("data-toggle");
-          workingToolheads[selectedIdx][k] = !workingToolheads[selectedIdx][k];
+          var items = getWorkingItems();
+          items[selectedIdx][k] = !items[selectedIdx][k];
           editorRender();
         });
       });
@@ -712,47 +816,54 @@ function dashboardHtml(): string {
     }
 
     function editorTextEdit(key) {
-      var th = workingToolheads[selectedIdx];
-      var cur = getField(th, key) || "";
+      var items = getWorkingItems();
+      var item = items[selectedIdx];
+      var cur = getField(item, key) || "";
       var big = key === "description" || key === "url";
       var inp = big
         ? '<textarea id="modalInput" style="width:100%;min-height:80px;">' + esc(cur) + '</textarea>'
         : '<input id="modalInput" type="text" value="' + esc(cur) + '" />';
+      var meta = getFieldMeta()[key];
+      var label = meta ? meta.label : key;
       openModal(
-        '<h3>Edit ' + FIELD_META[key].label + '</h3>' + inp +
+        '<h3>Edit ' + esc(label) + '</h3>' + inp +
         '<div class="row" style="margin-top:12px;"><button id="modalSave">Save</button> <button class="ghost" id="modalCancel">Cancel</button></div>'
       );
       document.getElementById("modalSave").addEventListener("click", function() {
-        setField(th, key, document.getElementById("modalInput").value);
+        setField(item, key, document.getElementById("modalInput").value);
         closeModal(); editorRender();
       });
       document.getElementById("modalCancel").addEventListener("click", closeModal);
     }
 
     function editorEnumEdit(key) {
-      var th = workingToolheads[selectedIdx];
-      var cur = getField(th, key) || "unknown";
-      var opts = editorData[FIELD_META[key].optionsKey] || [];
+      var items = getWorkingItems();
+      var item = items[selectedIdx];
+      var cur = getField(item, key) || "unknown";
+      var opts = getOptionsForKey(key);
       var oh = "";
       for (var i = 0; i < opts.length; i++) {
         oh += '<option value="' + esc(opts[i]) + '"' + (opts[i] === cur ? " selected" : "") + '>' + esc(opts[i]) + '</option>';
       }
+      var meta = getFieldMeta()[key];
+      var label = meta ? meta.label : key;
       openModal(
-        '<h3>Change ' + FIELD_META[key].label + '</h3>' +
+        '<h3>Change ' + esc(label) + '</h3>' +
         '<select id="modalSelect" style="width:100%;">' + oh + '</select>' +
         '<div class="row" style="margin-top:12px;"><button id="modalSave">Save</button> <button class="ghost" id="modalCancel">Cancel</button></div>'
       );
       document.getElementById("modalSave").addEventListener("click", function() {
-        setField(th, key, document.getElementById("modalSelect").value);
+        setField(item, key, document.getElementById("modalSelect").value);
         closeModal(); editorRender();
       });
       document.getElementById("modalCancel").addEventListener("click", closeModal);
     }
 
     function editorListModify(key) {
-      var th = workingToolheads[selectedIdx];
-      var arr = toArray(getField(th, key)).slice();
-      var allOpts = editorData[FIELD_META[key].optionsKey] || [];
+      var items = getWorkingItems();
+      var item = items[selectedIdx];
+      var arr = toArray(getField(item, key)).slice();
+      var allOpts = getOptionsForKey(key);
 
       function renderListModal() {
         var ih = "";
@@ -769,12 +880,17 @@ function dashboardHtml(): string {
         for (var j = 0; j < avail.length; j++) {
           oh += '<option value="' + esc(avail[j]) + '">' + esc(avail[j]) + '</option>';
         }
+        var meta = getFieldMeta()[key];
+        var label = meta ? meta.label : key;
 
         openModal(
-          '<h3>Modify ' + FIELD_META[key].label + '</h3>' +
+          '<h3>Modify ' + esc(label) + '</h3>' +
           '<div class="modal-items">' + ih + '</div>' +
           '<div class="modal-add"><select id="modalAddSel">' + oh + '</select>' +
           '<button id="modalAddBtn" class="alt btn-sm">Add</button></div>' +
+          '<div style="margin-top:6px;margin-bottom:12px;">' +
+          '<input id="modalCustomVal" type="text" placeholder="Or type a custom value" style="width:calc(100% - 70px);display:inline-block;" />' +
+          ' <button id="modalCustomAdd" class="alt btn-sm">Add</button></div>' +
           '<div class="row"><button id="modalDone">Done</button></div>'
         );
 
@@ -791,8 +907,15 @@ function dashboardHtml(): string {
           arr.push(v);
           renderListModal();
         });
+        document.getElementById("modalCustomAdd").addEventListener("click", function() {
+          var v = document.getElementById("modalCustomVal").value.trim();
+          if (!v) return;
+          arr = arr.filter(function(x) { return !isPlaceholder(x); });
+          arr.push(v);
+          renderListModal();
+        });
         document.getElementById("modalDone").addEventListener("click", function() {
-          setField(th, key, cleanFieldForSave(arr));
+          setField(item, key, cleanFieldForSave(arr));
           closeModal(); editorRender();
         });
       }
@@ -806,9 +929,10 @@ function dashboardHtml(): string {
       fi.addEventListener("change", function() {
         var f = fi.files[0];
         if (!f) return;
-        var th = workingToolheads[selectedIdx];
-        var toolheadName = th.name.replace(/[^a-zA-Z0-9_-]/g, "_");
-        var destFilename = toolheadName + ".webp";
+        var items = getWorkingItems();
+        var item = items[selectedIdx];
+        var itemName = (item.name || "item").replace(/[^a-zA-Z0-9_-]/g, "_");
+        var destFilename = itemName + ".webp";
         setStatus("Optimizing image...", null);
 
         var img = new Image();
@@ -828,8 +952,9 @@ function dashboardHtml(): string {
           canvas.toBlob(function(blob) {
             var reader = new FileReader();
             reader.onload = function() {
-              pendingImages[selectedIdx] = { filename: destFilename, content: reader.result.split(",")[1] };
-              th.image = "/" + destFilename;
+              var imgKey = currentCategory + "_" + selectedIdx;
+              pendingImages[imgKey] = { filename: destFilename, content: reader.result.split(",")[1] };
+              item.image = "/" + destFilename;
               editorRender();
               setStatus("Image staged: " + destFilename + " (optimized to WebP)", "ok");
             };
@@ -845,38 +970,135 @@ function dashboardHtml(): string {
       fi.click();
     }
 
-    function editorNewToolhead() {
-      if (!editorData) { setStatus("Load reference data first.", "error"); return; }
-      var name = prompt("Enter new toolhead name:");
+    function editorNewItem() {
+      if (!editorData) { setStatus("Load data first.", "error"); return; }
+      var catLabel = currentCategory.replace(/s$/, "");
+      var name = prompt("Enter new " + catLabel + " name:");
       if (!name || !name.trim()) return;
       name = name.trim();
-      for (var i = 0; i < workingToolheads.length; i++) {
-        if (workingToolheads[i].name.toLowerCase() === name.toLowerCase()) {
-          setStatus("Toolhead already exists: " + name, "error");
+      var items = getWorkingItems();
+      for (var i = 0; i < items.length; i++) {
+        if ((items[i].name || "").toLowerCase() === name.toLowerCase()) {
+          setStatus(catLabel + " already exists: " + name, "error");
           return;
         }
       }
-      workingToolheads.push({
-        name: name, title: name, url: "", description: "", category: "",
-        image: "", configurator: false, extruders: "unknown", hotend: "unknown",
-        probe: "unknown", boards: "unknown", hotend_fan: "unknown",
-        part_cooling_fan: "unknown", filament_cutter: "unknown"
-      });
+      var newItem = { name: name };
+      var fieldOrder = getFieldOrder();
+      var fieldMeta = getFieldMeta();
+      for (var j = 0; j < fieldOrder.length; j++) {
+        var k = fieldOrder[j];
+        if (k === "name") continue;
+        var m = fieldMeta[k];
+        if (!m) continue;
+        if (m.type === "toggle") newItem[k] = false;
+        else if (m.type === "modify") newItem[k] = "unknown";
+        else if (m.type === "change") newItem[k] = "unknown";
+        else if (m.type === "image") newItem[k] = "";
+        else newItem[k] = "";
+      }
+      items.push(newItem);
       editorPopulate();
       var sel = document.getElementById("editorSelect");
-      for (var j = 0; j < sel.options.length; j++) {
-        if (sel.options[j].textContent === name) {
-          sel.value = sel.options[j].value;
-          selectedIdx = parseInt(sel.options[j].value);
+      for (var s = 0; s < sel.options.length; s++) {
+        if (sel.options[s].textContent === name) {
+          sel.value = sel.options[s].value;
+          selectedIdx = parseInt(sel.options[s].value);
           break;
         }
       }
       editorRender();
-      setStatus("New toolhead added: " + name, "ok");
+      setStatus("New " + catLabel + " added: " + name, "ok");
+    }
+
+    function editorManageFields() {
+      if (!editorData) { setStatus("Load data first.", "error"); return; }
+      var fieldMeta = getFieldMeta();
+      var fieldOrder = getFieldOrder();
+      var items = getWorkingItems();
+
+      function renderFieldsModal() {
+        var ih = '<h3>Manage Fields (' + currentCategory + ')</h3>';
+        ih += '<div class="modal-items">';
+        for (var i = 0; i < fieldOrder.length; i++) {
+          var key = fieldOrder[i];
+          var meta = fieldMeta[key];
+          if (!meta) continue;
+          ih += '<div class="modal-item"><span>' + esc(meta.label) + ' <span class="small">(' + esc(meta.type) + ')</span></span>';
+          if (key !== "name") {
+            ih += '<button class="ghost btn-sm btn-danger" data-rmfield="' + esc(key) + '">Remove</button>';
+          }
+          ih += '</div>';
+        }
+        ih += '</div>';
+        ih += '<div style="margin-top:12px;border-top:1px dashed var(--line);padding-top:12px;">';
+        ih += '<h4 style="margin:0 0 8px;">Add New Field</h4>';
+        ih += '<div style="margin-bottom:6px;"><label>Field Name</label><input id="newFieldName" type="text" placeholder="e.g. weight" /></div>';
+        ih += '<div style="margin-bottom:6px;"><label>Field Type</label>';
+        ih += '<select id="newFieldType" style="width:100%;">';
+        ih += '<option value="edit">Edit (text entry)</option>';
+        ih += '<option value="toggle">Toggle (boolean)</option>';
+        ih += '<option value="modify">Modify (pick from list)</option>';
+        ih += '<option value="change">Change (select from options)</option>';
+        ih += '<option value="image">Image Upload</option>';
+        ih += '</select></div>';
+        ih += '<button id="addFieldBtn" class="alt" style="width:100%;">Add Field</button>';
+        ih += '</div>';
+        ih += '<div class="row" style="margin-top:12px;"><button id="modalDone">Done</button></div>';
+        openModal(ih);
+
+        document.querySelectorAll("[data-rmfield]").forEach(function(b) {
+          b.addEventListener("click", function() {
+            var fk = b.getAttribute("data-rmfield");
+            if (!confirm("Remove field '" + fk + "' from all " + items.length + " " + currentCategory + "?")) return;
+            delete fieldMeta[fk];
+            var idx = fieldOrder.indexOf(fk);
+            if (idx >= 0) fieldOrder.splice(idx, 1);
+            for (var x = 0; x < items.length; x++) {
+              delete items[x][fk];
+            }
+            renderFieldsModal();
+            setStatus("Field '" + fk + "' removed from all " + currentCategory + ".", "ok");
+          });
+        });
+
+        document.getElementById("addFieldBtn").addEventListener("click", function() {
+          var fname = document.getElementById("newFieldName").value.trim();
+          var ftype = document.getElementById("newFieldType").value;
+          if (!fname) { setStatus("Field name is required.", "error"); return; }
+          // Field keys are snake_case to match JSON conventions
+          var fieldKey = fname.toLowerCase().replace(/[^a-z0-9_]/g, "_");
+          if (fieldMeta[fieldKey]) { setStatus("Field '" + fieldKey + "' already exists.", "error"); return; }
+
+          var newMeta = { type: ftype, label: fname };
+          // _self: collect unique values from all items for list picking (modify)
+          // _self_enum: collect unique values from all items for dropdown selection (change)
+          if (ftype === "modify") newMeta.optionsKey = "_self";
+          if (ftype === "change") newMeta.optionsKey = "_self_enum";
+          fieldMeta[fieldKey] = newMeta;
+          fieldOrder.push(fieldKey);
+
+          var defaultVal = "";
+          if (ftype === "toggle") defaultVal = false;
+          else if (ftype === "modify") defaultVal = "unknown";
+          else if (ftype === "change") defaultVal = "unknown";
+          for (var x = 0; x < items.length; x++) {
+            if (items[x][fieldKey] === undefined) items[x][fieldKey] = defaultVal;
+          }
+
+          renderFieldsModal();
+          setStatus("Field '" + fname + "' (" + ftype + ") added to all " + items.length + " " + currentCategory + ".", "ok");
+        });
+
+        document.getElementById("modalDone").addEventListener("click", function() {
+          closeModal(); editorRender();
+        });
+      }
+      renderFieldsModal();
     }
 
     async function editorCreatePR() {
-      if (!workingToolheads.length) return;
+      if (!workingData.toolheads.length && !workingData.extruders.length && !workingData.hotends.length && !workingData.probes.length) return;
       setStatus("Creating pull request...", null);
       try {
         var images = [];
@@ -885,7 +1107,12 @@ function dashboardHtml(): string {
             images.push(pendingImages[key]);
           }
         }
-        var body = { toolheads: workingToolheads };
+        var body = {
+          toolheads: workingData.toolheads,
+          extruders: workingData.extruders,
+          hotends: workingData.hotends,
+          probes: workingData.probes
+        };
         if (images.length) body.images = images;
         var res = await requestJson("/api/create-pr", {
           method: "POST",
@@ -916,11 +1143,17 @@ function dashboardHtml(): string {
     });
 
     // Editor event bindings
+    document.getElementById("editorCategory").addEventListener("change", function() {
+      currentCategory = this.value;
+      selectedIdx = -1;
+      if (editorData) editorPopulate();
+    });
     document.getElementById("editorSelect").addEventListener("change", function() {
       selectedIdx = this.value ? parseInt(this.value) : -1;
       editorRender();
     });
-    document.getElementById("editorNewBtn").addEventListener("click", editorNewToolhead);
+    document.getElementById("editorNewBtn").addEventListener("click", editorNewItem);
+    document.getElementById("editorFieldsBtn").addEventListener("click", editorManageFields);
     document.getElementById("editorLoadBtn").addEventListener("click", editorLoad);
     document.getElementById("editorPRBtn").addEventListener("click", editorCreatePR);
     document.getElementById("modalOverlay").addEventListener("click", function(e) {
@@ -1019,7 +1252,8 @@ async function runAndPersist(env: Env, trigger: string, recheck = false): Promis
   if (report.ok && report.changed && report.updatedPayload.toolheads.length > 0 && env.GITHUB_TOKEN?.trim()) {
     try {
       const changedNames = report.results.map((r) => r.name).join(", ");
-      const prResult = await createToolheadPR(env, report.updatedPayload.toolheads, {
+      const prResult = await createDataPR(env, {
+        toolheads: report.updatedPayload.toolheads,
         message: `ToolheadScanner: update ${report.changeCount} toolhead(s) — ${changedNames}`,
       });
       report.logs.push(`PR created: ${prResult.pr_url}`);
@@ -1062,23 +1296,35 @@ async function handleReferenceData(env: Env): Promise<Response> {
   return jsonResponse(data);
 }
 
-async function createToolheadPR(
+interface DataPRPayload {
+  toolheads?: ToolheadEntry[];
+  extruders?: NamedEntry[];
+  hotends?: NamedEntry[];
+  probes?: NamedEntry[];
+  message?: string;
+  images?: Array<{ filename: string; content: string }>;
+}
+
+async function createDataPR(
   env: Env,
-  toolheads: ToolheadEntry[],
-  options?: { message?: string; images?: Array<{ filename: string; content: string }> },
+  payload: DataPRPayload,
 ): Promise<{ pr_url: string; pr_number: number; branch: string }> {
   const githubToken = env.GITHUB_TOKEN?.trim();
   if (!githubToken) {
     throw new Error("GITHUB_TOKEN is not configured.");
   }
 
-  if (!Array.isArray(toolheads) || toolheads.length === 0) {
-    throw new Error("toolheads array is required.");
+  const hasToolheads = Array.isArray(payload.toolheads) && payload.toolheads.length > 0;
+  const hasExtruders = Array.isArray(payload.extruders) && payload.extruders.length > 0;
+  const hasHotends = Array.isArray(payload.hotends) && payload.hotends.length > 0;
+  const hasProbes = Array.isArray(payload.probes) && payload.probes.length > 0;
+
+  if (!hasToolheads && !hasExtruders && !hasHotends && !hasProbes) {
+    throw new Error("At least one data array (toolheads, extruders, hotends, or probes) is required.");
   }
 
   const UPSTREAM_OWNER = "SartorialGrunt0";
   const UPSTREAM_REPO = "ToolheadBuilder";
-  const FILE_PATH = "src/data/toolheads.json";
 
   async function gh(path: string, reqOptions: RequestInit = {}): Promise<Record<string, unknown>> {
     const resp = await fetch(`https://api.github.com${path}`, {
@@ -1131,27 +1377,38 @@ async function createToolheadPR(
   const baseSha = ((mainRef.object as Record<string, unknown>).sha) as string;
 
   // 5. Create a new branch
-  const branchName = `toolhead-update-${Date.now()}`;
+  const branchName = `data-update-${Date.now()}`;
   await gh(`/repos/${forkOwner}/${UPSTREAM_REPO}/git/refs`, {
     method: "POST",
     body: JSON.stringify({ ref: `refs/heads/${branchName}`, sha: baseSha }),
   });
 
-  // 6. Create blob for toolheads.json
-  const fileContent = JSON.stringify({ toolheads }, null, 2) + "\n";
-  const fileBlob = await gh(`/repos/${forkOwner}/${UPSTREAM_REPO}/git/blobs`, {
-    method: "POST",
-    body: JSON.stringify({ content: fileContent, encoding: "utf-8" }),
-  });
+  // 6. Build tree entries for all data files
+  const treeEntries: Array<{ path: string; mode: string; type: string; sha: string }> = [];
+  const changedFiles: string[] = [];
 
-  // 7. Build tree entries
-  const treeEntries: Array<{ path: string; mode: string; type: string; sha: string }> = [
-    { path: FILE_PATH, mode: "100644", type: "blob", sha: fileBlob.sha as string },
+  const dataFiles: Array<{ key: string; wrapKey: string; path: string; data: unknown[] | undefined }> = [
+    { key: "toolheads", wrapKey: "toolheads", path: "src/data/toolheads.json", data: payload.toolheads },
+    { key: "extruders", wrapKey: "extruders", path: "src/data/extruders.json", data: payload.extruders },
+    { key: "hotends", wrapKey: "hotends", path: "src/data/hotends.json", data: payload.hotends },
+    { key: "probes", wrapKey: "probes", path: "src/data/probes.json", data: payload.probes },
   ];
 
-  // 8. Upload image blobs
-  if (options?.images && options.images.length > 0) {
-    for (const img of options.images) {
+  for (const df of dataFiles) {
+    if (Array.isArray(df.data) && df.data.length > 0) {
+      const fileContent = JSON.stringify({ [df.wrapKey]: df.data }, null, 2) + "\n";
+      const fileBlob = await gh(`/repos/${forkOwner}/${UPSTREAM_REPO}/git/blobs`, {
+        method: "POST",
+        body: JSON.stringify({ content: fileContent, encoding: "utf-8" }),
+      });
+      treeEntries.push({ path: df.path, mode: "100644", type: "blob", sha: fileBlob.sha as string });
+      changedFiles.push(df.key);
+    }
+  }
+
+  // 7. Upload image blobs
+  if (payload.images && payload.images.length > 0) {
+    for (const img of payload.images) {
       if (img.content && img.filename) {
         const sanitized = img.filename.replace(/[^a-zA-Z0-9._-]/g, "_");
         const imageBlob = await gh(`/repos/${forkOwner}/${UPSTREAM_REPO}/git/blobs`, {
@@ -1163,37 +1420,37 @@ async function createToolheadPR(
     }
   }
 
-  // 9. Get base commit tree
+  // 8. Get base commit tree
   const baseCommit = await gh(`/repos/${forkOwner}/${UPSTREAM_REPO}/git/commits/${baseSha}`);
   const baseTreeSha = ((baseCommit.tree as Record<string, unknown>).sha) as string;
 
-  // 10. Create new tree
+  // 9. Create new tree
   const newTree = await gh(`/repos/${forkOwner}/${UPSTREAM_REPO}/git/trees`, {
     method: "POST",
     body: JSON.stringify({ base_tree: baseTreeSha, tree: treeEntries }),
   });
 
-  // 11. Create commit
-  const commitMessage = options?.message || "Update toolheads.json via ToolheadScanner";
+  // 10. Create commit
+  const commitMessage = payload.message || `Update ${changedFiles.join(", ")} via ToolheadScanner`;
   const newCommit = await gh(`/repos/${forkOwner}/${UPSTREAM_REPO}/git/commits`, {
     method: "POST",
     body: JSON.stringify({ message: commitMessage, tree: newTree.sha as string, parents: [baseSha] }),
   });
 
-  // 12. Update branch ref
+  // 11. Update branch ref
   await gh(`/repos/${forkOwner}/${UPSTREAM_REPO}/git/refs/heads/${branchName}`, {
     method: "PATCH",
     body: JSON.stringify({ sha: newCommit.sha as string }),
   });
 
-  // 13. Create pull request
+  // 12. Create pull request
   const pr = await gh(`/repos/${UPSTREAM_OWNER}/${UPSTREAM_REPO}/pulls`, {
     method: "POST",
     body: JSON.stringify({
       title: commitMessage,
       head: `${forkOwner}:${branchName}`,
       base: "main",
-      body: "Automated update from ToolheadScanner Dashboard.",
+      body: `Automated update from ToolheadScanner Dashboard.\n\nUpdated files: ${changedFiles.join(", ")}`,
     }),
   });
 
@@ -1201,17 +1458,10 @@ async function createToolheadPR(
 }
 
 async function handleCreatePR(request: Request, env: Env): Promise<Response> {
-  const payload = (await request.json()) as {
-    toolheads: ToolheadEntry[];
-    message?: string;
-    images?: Array<{ filename: string; content: string }>;
-  };
+  const payload = (await request.json()) as DataPRPayload;
 
   try {
-    const result = await createToolheadPR(env, payload.toolheads, {
-      message: payload.message,
-      images: payload.images,
-    });
+    const result = await createDataPR(env, payload);
     return jsonResponse(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -1238,8 +1488,8 @@ export default {
         "GET  /extra-locations       List KV-backed extra GitHub locations",
         "POST /extra-locations       Add one extra location",
         "DELETE /extra-locations     Remove one extra location",
-        "GET  /api/reference-data    Fetch toolhead reference data for editor",
-        "POST /api/create-pr         Create a GitHub PR with toolhead changes",
+        "GET  /api/reference-data    Fetch reference data for editor (toolheads, extruders, hotends, probes)",
+        "POST /api/create-pr         Create a GitHub PR with data changes",
       ].join("\n"));
     }
 
