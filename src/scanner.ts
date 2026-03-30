@@ -43,6 +43,26 @@ const FILAMENT_CUTTER_PATTERNS = [
   "\\bercf\\b.{0,24}\\bcutter\\b",
 ];
 
+const PRINTER_PATTERNS: Array<[string, string[]]> = [
+  ["V0", ["\\bv0\\b", "\\bvoron\\s*0\\b", "\\bvoron\\s*zero\\b", "\\bv0\\.\\d\\b"]],
+  ["V2.4", ["\\bv2\\.4\\b", "\\bvoron\\s*2\\.4\\b", "\\bvoron\\s*2\\b(?!\\.[^4])"]],
+  ["Trident", ["\\btrident\\b", "\\bvt\\b"]],
+  ["Switchwire", ["\\bswitchwire\\b"]],
+  ["Enderwire", ["\\benderwire\\b"]],
+  ["SV08", ["\\bsv08\\b", "\\bsovol\\s*sv08\\b"]],
+  ["Monolith", ["\\bmonolith\\b"]],
+];
+
+const PRINTER_TO_BELT_PATH: Record<string, string> = {
+  "V0": "Voron coreXY",
+  "V2.4": "Voron coreXY",
+  "Trident": "Voron coreXY",
+  "Switchwire": "Voron coreXZ",
+  "Enderwire": "Voron coreXZ",
+  "SV08": "unknown",
+  "Monolith": "Monolith coreXY",
+};
+
 export interface Env {
   HASH_CACHE: KVNamespace;
   SCANNER_STATE: KVNamespace;
@@ -68,6 +88,8 @@ export interface ToolheadEntry {
   part_cooling_fan?: ToolheadField;
   part_cooling_fans?: ToolheadField;
   filament_cutter?: string | null;
+  printer_compatibility?: ToolheadField;
+  belt_path?: ToolheadField;
   [key: string]: unknown;
 }
 
@@ -88,6 +110,7 @@ interface AliasData {
   hotends?: Record<string, string>;
   probes?: Record<string, string>;
   boards?: Record<string, string>;
+  printers?: Record<string, string>;
   [key: string]: unknown;
 }
 
@@ -113,6 +136,8 @@ export interface ScanResult {
   new_hotend_fans: string[];
   new_part_cooling_fans: string[];
   new_filament_cutter: boolean;
+  new_printers: string[];
+  new_belt_paths: string[];
   sources: Record<string, string>;
   updated: ToolheadEntry;
   original: ToolheadEntry;
@@ -151,13 +176,14 @@ function sanitizeAliasSection(value: unknown): Record<string, string> {
   );
 }
 
-function sanitizeAliases(seed: unknown): Required<Pick<AliasData, "extruders" | "hotends" | "probes" | "boards">> {
+function sanitizeAliases(seed: unknown): Required<Pick<AliasData, "extruders" | "hotends" | "probes" | "boards" | "printers">> {
   const raw = (seed ?? {}) as AliasData;
   return {
     extruders: sanitizeAliasSection(raw.extruders),
     hotends: sanitizeAliasSection(raw.hotends),
     probes: sanitizeAliasSection(raw.probes),
     boards: sanitizeAliasSection(raw.boards),
+    printers: sanitizeAliasSection(raw.printers),
   };
 }
 
@@ -213,8 +239,8 @@ export async function addExtraLocation(env: Env, toolhead: string, url: string):
   if (!normalizedToolhead) {
     throw new Error("Toolhead name is required.");
   }
-  if (!normalizedUrl.includes("github.com")) {
-    throw new Error("URL must be a GitHub URL.");
+  if (!normalizedUrl.startsWith("http://") && !normalizedUrl.startsWith("https://")) {
+    throw new Error("URL must be an HTTP or HTTPS URL.");
   }
 
   const existing = await loadExtraLocations(env);
@@ -398,6 +424,30 @@ function buildScanTargets(toolheads: ToolheadEntry[], extraLocations: ExtraLocat
   return targets;
 }
 
+function stripHtmlTags(html: string): string {
+  let text = html;
+  text = text.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, " ");
+  text = text.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, " ");
+  text = text.replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, " ");
+  text = text.replace(/<footer[^>]*>[\s\S]*?<\/footer>/gi, " ");
+  text = text.replace(/<br\s*\/?>/gi, "\n");
+  text = text.replace(/<\/(?:p|div|li|tr|h[1-6]|td|th|dt|dd|section|article)>/gi, "\n");
+  text = text.replace(/<[^>]+>/g, " ");
+  text = text.replace(/&nbsp;/gi, " ");
+  text = text.replace(/&amp;/gi, "&");
+  text = text.replace(/&lt;/gi, "<");
+  text = text.replace(/&gt;/gi, ">");
+  text = text.replace(/&quot;/gi, '"');
+  text = text.replace(/&#39;/gi, "'");
+  text = text.replace(/[ \t]+/g, " ");
+  text = text.replace(/\n{3,}/g, "\n\n");
+  return text.trim();
+}
+
+function isHtmlContent(text: string): boolean {
+  return /<!doctype\s+html|<html[\s>]/i.test(text.slice(0, 500));
+}
+
 async function collectReadmeBlocks(
   env: Env,
   scanTargets: ScanTarget[],
@@ -410,36 +460,41 @@ async function collectReadmeBlocks(
   for (const target of scanTargets) {
     const name = target.name || "Unknown";
     const url = target.url.trim();
-    if (!url.includes("github.com")) {
-      log(`  [SKIP]  ${name}  (not a GitHub URL)`);
-      continue;
-    }
+    const isGitHub = url.includes("github.com");
 
     let readmeText: string | null = null;
-    for (const candidate of githubContentCandidates(url, target.source)) {
-      readmeText = await fetchText(candidate);
-      if (readmeText !== null) {
-        break;
+
+    if (isGitHub) {
+      for (const candidate of githubContentCandidates(url, target.source)) {
+        readmeText = await fetchText(candidate);
+        if (readmeText !== null) {
+          break;
+        }
+      }
+    } else if (url.startsWith("http://") || url.startsWith("https://")) {
+      const rawResponse = await fetchText(url);
+      if (rawResponse !== null) {
+        readmeText = isHtmlContent(rawResponse) ? stripHtmlTags(rawResponse) : rawResponse;
       }
     }
 
     if (readmeText === null) {
-      log(`  [FAIL]  ${name}  (no README found)`);
+      log(`  [FAIL]  ${name}  (no content found)`);
       continue;
     }
 
-  const currentHash = await sha256Hex(readmeText);
+    const currentHash = await sha256Hex(readmeText);
     updatedHashes.push([url, currentHash]);
 
     if (skipUnchanged) {
       const cachedHash = await env.HASH_CACHE.get(hashKey(url));
       if (cachedHash === currentHash) {
-        log(`  [SKIP]  ${name}  (README unchanged)`);
+        log(`  [SKIP]  ${name}  (content unchanged)`);
         continue;
       }
     }
 
-    log(`  [OK]    ${name}`);
+    log(`  [OK]    ${name}${isGitHub ? "" : "  (HTML page)"}`);
     readmeBlocks[name] = readmeBlocks[name] ? `${readmeBlocks[name]}\n\n${readmeText}` : readmeText;
   }
 
@@ -588,6 +643,60 @@ function findFilamentCutterSource(text: string): string | null {
   return null;
 }
 
+function findPrinters(text: string, printerAliasMap: Record<string, string>): {
+  printers: string[];
+  printerSources: Record<string, string>;
+} {
+  const textLower = text.toLowerCase();
+  const found = new Set<string>();
+  const printers: string[] = [];
+  const printerSources: Record<string, string> = {};
+
+  for (const [canonical, patterns] of PRINTER_PATTERNS) {
+    if (found.has(canonical)) continue;
+    for (const pattern of patterns) {
+      const regex = new RegExp(pattern, "ig");
+      const match = regex.exec(text);
+      if (match) {
+        found.add(canonical);
+        printers.push(canonical);
+        const lineStart = text.lastIndexOf("\n", match.index - 1) + 1;
+        const rawLineEnd = text.indexOf("\n", match.index + match[0].length);
+        const lineEnd = rawLineEnd === -1 ? text.length : rawLineEnd;
+        printerSources[canonical] = text.slice(lineStart, lineEnd).trim();
+        break;
+      }
+    }
+  }
+
+  for (const [alias, canonical] of Object.entries(printerAliasMap)) {
+    if (found.has(canonical)) continue;
+    const aliasPattern = new RegExp(`\\b${escapeRegExp(alias)}\\b`, "ig");
+    const match = aliasPattern.exec(text);
+    if (match) {
+      found.add(canonical);
+      printers.push(canonical);
+      const lineStart = text.lastIndexOf("\n", match.index - 1) + 1;
+      const rawLineEnd = text.indexOf("\n", match.index + match[0].length);
+      const lineEnd = rawLineEnd === -1 ? text.length : rawLineEnd;
+      printerSources[canonical] = text.slice(lineStart, lineEnd).trim();
+    }
+  }
+
+  return { printers, printerSources };
+}
+
+function deriveBeltPaths(printers: string[]): string[] {
+  const pathSet = new Set<string>();
+  for (const printer of printers) {
+    const belt = PRINTER_TO_BELT_PATH[printer];
+    if (belt && belt !== "unknown") {
+      pathSet.add(belt);
+    }
+  }
+  return [...pathSet];
+}
+
 function normalizeField(value: ToolheadField): Set<string> {
   if (value === null || value === undefined) {
     return new Set<string>();
@@ -685,6 +794,8 @@ export function buildEmailBodies(results: ScanResult[]): { text: string; html: s
       ["Boards", entry.new_boards],
       ["Hotend Fans", entry.new_hotend_fans],
       ["Part Cooling Fans", entry.new_part_cooling_fans],
+      ["Printers", entry.new_printers],
+      ["Belt Paths", entry.new_belt_paths],
     ];
 
     for (const [label, items] of sections) {
@@ -717,6 +828,8 @@ export function buildEmailBodies(results: ScanResult[]): { text: string; html: s
       ["Boards", entry.new_boards],
       ["Hotend Fans", entry.new_hotend_fans],
       ["Part Cooling Fans", entry.new_part_cooling_fans],
+      ["Printers", entry.new_printers],
+      ["Belt Paths", entry.new_belt_paths],
     ];
 
     for (const [label, items] of sections) {
@@ -823,7 +936,16 @@ export async function runScan(env: Env, options: RunOptions): Promise<ScanReport
       const existingCutter = String(toolhead.filament_cutter ?? "").toLowerCase().trim();
       const newFilamentCutter = Boolean(filamentCutterSource && PLACEHOLDER_VALUES.has(existingCutter));
 
-      if (!newExtruders.length && !newHotends.length && !newProbes.length && !newBoards.length && !newHotendFans.length && !newPartCoolingFans.length && !newFilamentCutter) {
+      const { printers: foundPrinters, printerSources } = findPrinters(readmeText, aliases.printers);
+      const newPrinters = findNewSimple(foundPrinters, toolhead.printer_compatibility);
+      const allPrinters = [...new Set([
+        ...Array.isArray(toolhead.printer_compatibility) ? toolhead.printer_compatibility : (toolhead.printer_compatibility && !PLACEHOLDER_VALUES.has(String(toolhead.printer_compatibility).toLowerCase().trim()) ? [String(toolhead.printer_compatibility)] : []),
+        ...newPrinters,
+      ])];
+      const derivedBeltPaths = deriveBeltPaths(allPrinters);
+      const newBeltPaths = findNewSimple(derivedBeltPaths, toolhead.belt_path);
+
+      if (!newExtruders.length && !newHotends.length && !newProbes.length && !newBoards.length && !newHotendFans.length && !newPartCoolingFans.length && !newFilamentCutter && !newPrinters.length && !newBeltPaths.length) {
         continue;
       }
 
@@ -849,6 +971,12 @@ export async function runScan(env: Env, options: RunOptions): Promise<ScanReport
       if (newFilamentCutter) {
         sources.filament_cutter = filamentCutterSource ?? "Unknown source";
       }
+      for (const item of newPrinters) {
+        sources[`printer::${item}`] = printerSources[item] ?? "Unknown source";
+      }
+      for (const item of newBeltPaths) {
+        sources[`belt_path::${item}`] = "Derived from printer compatibility";
+      }
 
       log(`Toolhead : ${name}`);
       const logSections: Array<[string, string[]]> = [
@@ -858,6 +986,8 @@ export async function runScan(env: Env, options: RunOptions): Promise<ScanReport
         ["Boards", newBoards],
         ["Hotend Fans", newHotendFans],
         ["Part Cooling Fans", newPartCoolingFans],
+        ["Printers", newPrinters],
+        ["Belt Paths", newBeltPaths],
       ];
       for (const [label, items] of logSections) {
         if (!items.length) {
@@ -891,6 +1021,12 @@ export async function runScan(env: Env, options: RunOptions): Promise<ScanReport
       if (newFilamentCutter) {
         updated.filament_cutter = "supported";
       }
+      if (newPrinters.length) {
+        updated.printer_compatibility = mergeField(toolhead.printer_compatibility, newPrinters);
+      }
+      if (newBeltPaths.length) {
+        updated.belt_path = mergeField(toolhead.belt_path, newBeltPaths);
+      }
       updated._new_item_sources = sources;
 
       updatesNeeded.push(updated);
@@ -903,6 +1039,8 @@ export async function runScan(env: Env, options: RunOptions): Promise<ScanReport
         new_hotend_fans: newHotendFans,
         new_part_cooling_fans: newPartCoolingFans,
         new_filament_cutter: newFilamentCutter,
+        new_printers: newPrinters,
+        new_belt_paths: newBeltPaths,
         sources,
         updated,
         original: stableClone(toolhead),
@@ -972,6 +1110,8 @@ export async function loadEditorData(dataSourceBase?: string): Promise<{
   fans: string[];
   filamentCutterOptions: string[];
   categoryOptions: string[];
+  printerOptions: string[];
+  beltPathOptions: string[];
 }> {
   const ref = await loadReferenceData(() => {}, dataSourceBase);
   const aliases = sanitizeAliases(aliasSeed);
@@ -989,5 +1129,7 @@ export async function loadEditorData(dataSourceBase?: string): Promise<{
     fans: FAN_PATTERNS.map(([name]) => name),
     filamentCutterOptions: ["native", "mod", "unknown", "unsupported"],
     categoryOptions: ["Printers for Ants", "Full Size Printers"],
+    printerOptions: PRINTER_PATTERNS.map(([name]) => name),
+    beltPathOptions: [...new Set(Object.values(PRINTER_TO_BELT_PATH).filter((v) => v !== "unknown"))].sort(),
   };
 }

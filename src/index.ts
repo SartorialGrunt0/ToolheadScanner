@@ -581,7 +581,9 @@ function dashboardHtml(): string {
         boards: { type: "modify", label: "Boards", optionsKey: "boards" },
         hotend_fan: { type: "modify", label: "Hotend Fan", optionsKey: "fans" },
         part_cooling_fan: { type: "modify", label: "Part Cooling Fan", optionsKey: "fans" },
-        filament_cutter: { type: "change", label: "Filament Cutter", optionsKey: "filamentCutterOptions" }
+        filament_cutter: { type: "change", label: "Filament Cutter", optionsKey: "filamentCutterOptions" },
+        printer_compatibility: { type: "modify", label: "Printer Compatibility", optionsKey: "printerOptions" },
+        belt_path: { type: "modify", label: "Belt Path", optionsKey: "beltPathOptions" }
       },
       extruders: {
         name: { type: "edit", label: "Name" },
@@ -615,7 +617,8 @@ function dashboardHtml(): string {
 
     var CATEGORY_FIELD_ORDER = {
       toolheads: ["name", "title", "url", "description", "category", "image", "configurator",
-        "extruders", "hotend", "probe", "boards", "hotend_fan", "part_cooling_fan", "filament_cutter"],
+        "extruders", "hotend", "probe", "boards", "hotend_fan", "part_cooling_fan", "filament_cutter",
+        "printer_compatibility", "belt_path"],
       extruders: ["name", "mounting_pattern", "gear_type", "url", "description", "filament_sensor", "top_pick"],
       hotends: ["name", "mounting_pattern", "length", "meltzone_length", "hotend_type", "flow_rate", "nozzle_compatibility", "url", "description", "top_pick"],
       probes: ["name", "type", "url", "description", "top_pick"]
@@ -1092,7 +1095,7 @@ function dashboardHtml(): string {
                 } else {
                   delete curMeta.optionsKey;
                 }
-                var defaultVal: string | boolean = "";
+                var defaultVal = "";
                 if (newType === "toggle") defaultVal = false;
                 else if (newType === "modify" || newType === "change") defaultVal = "unknown";
                 for (var x = 0; x < items.length; x++) {

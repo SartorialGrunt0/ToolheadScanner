@@ -37,7 +37,12 @@
       "configurator": true,
       "hotend_fan": "2510",
       "part_cooling_fan": "4010",
-      "filament_cutter": "native"
+      "filament_cutter": "native",
+      "printer_compatibility": [
+        "V2.4",
+        "Trident"
+      ],
+      "belt_path": "Voron coreXY"
     },
     {
       "name": "Afterburner",
@@ -54,7 +59,12 @@
       "image": "",
       "hotend_fan": "4010",
       "part_cooling_fan": "4020",
-      "filament_cutter": "unknown"
+      "filament_cutter": "unknown",
+      "printer_compatibility": [
+        "V2.4",
+        "Trident"
+      ],
+      "belt_path": "Voron coreXY"
     },
     {
       "name": "Angry",
@@ -71,7 +81,9 @@
       "image": "",
       "hotend_fan": "unknown",
       "part_cooling_fan": "unknown",
-      "filament_cutter": "unknown"
+      "filament_cutter": "unknown",
+      "printer_compatibility": "Monolith",
+      "belt_path": "Monolith coreXY"
     },
     {
       "name": "AntHead",
@@ -102,7 +114,9 @@
       "configurator": true,
       "hotend_fan": "2510",
       "part_cooling_fan": "4010",
-      "filament_cutter": "unknown"
+      "filament_cutter": "unknown",
+      "printer_compatibility": "V0",
+      "belt_path": "Voron coreXY"
     },
     {
       "name": "Archetype",
@@ -137,7 +151,12 @@
         "5015",
         "CPAP"
       ],
-      "filament_cutter": "unknown"
+      "filament_cutter": "unknown",
+      "printer_compatibility": [
+        "V2.4",
+        "Trident"
+      ],
+      "belt_path": "Voron coreXY"
     },
     {
       "name": "Banantis",
@@ -154,7 +173,9 @@
       "image": "",
       "hotend_fan": "unknown",
       "part_cooling_fan": "unknown",
-      "filament_cutter": "unknown"
+      "filament_cutter": "unknown",
+      "printer_compatibility": "Monolith",
+      "belt_path": "Monolith coreXY"
     },
     {
       "name": "Calamity",
@@ -171,7 +192,12 @@
       "image": "",
       "hotend_fan": "unknown",
       "part_cooling_fan": "unknown",
-      "filament_cutter": "unknown"
+      "filament_cutter": "unknown",
+      "printer_compatibility": [
+        "V2.4",
+        "Trident"
+      ],
+      "belt_path": "Voron coreXY"
     },
     {
       "name": "Crown Cooler",
@@ -201,7 +227,12 @@
       "image": "/crown_cooler.webp",
       "hotend_fan": "4028",
       "part_cooling_fan": "CPAP",
-      "filament_cutter": "unknown"
+      "filament_cutter": "unknown",
+      "printer_compatibility": [
+        "V2.4",
+        "Trident"
+      ],
+      "belt_path": "Voron coreXY"
     },
     {
       "name": "DK's Monolith",
@@ -218,7 +249,9 @@
       "image": "",
       "hotend_fan": "unknown",
       "part_cooling_fan": "unknown",
-      "filament_cutter": "unknown"
+      "filament_cutter": "unknown",
+      "printer_compatibility": "Monolith",
+      "belt_path": "Monolith coreXY"
     },
     {
       "name": "Dragon Brick",
@@ -235,7 +268,9 @@
       "image": "",
       "hotend_fan": "unknown",
       "part_cooling_fan": "unknown",
-      "filament_cutter": "unknown"
+      "filament_cutter": "unknown",
+      "printer_compatibility": "V0",
+      "belt_path": "Voron coreXY"
     },
     {
       "name": "Dragon Burner",
@@ -288,9 +323,14 @@
       "image": "/dragonburner.webp",
       "category": "Printers for Ants",
       "configurator": true,
-      "hotend_fan": ["3010","2510"],
+      "hotend_fan": [
+        "3010",
+        "2510"
+      ],
       "part_cooling_fan": "4010",
-      "filament_cutter": "unknown"
+      "filament_cutter": "unknown",
+      "printer_compatibility": "V0",
+      "belt_path": "Voron coreXY"
     },
     {
       "name": "EVA",
@@ -307,7 +347,9 @@
       "image": "",
       "hotend_fan": "unknown",
       "part_cooling_fan": "unknown",
-      "filament_cutter": "unknown"
+      "filament_cutter": "unknown",
+      "printer_compatibility": "unknown",
+      "belt_path": "unknown"
     },
     {
       "name": "Fibre Steam",
@@ -329,7 +371,9 @@
       "image": "",
       "hotend_fan": "unknown",
       "part_cooling_fan": "unknown",
-      "filament_cutter": "unknown"
+      "filament_cutter": "unknown",
+      "printer_compatibility": "Monolith",
+      "belt_path": "Monolith coreXY"
     },
     {
       "name": "Fibre Stream",
@@ -346,7 +390,9 @@
       "image": "",
       "hotend_fan": "unknown",
       "part_cooling_fan": "unknown",
-      "filament_cutter": "unknown"
+      "filament_cutter": "unknown",
+      "printer_compatibility": "Monolith",
+      "belt_path": "Monolith coreXY"
     },
     {
       "name": "Gustav",
@@ -370,7 +416,9 @@
       "image": "",
       "hotend_fan": "unknown",
       "part_cooling_fan": "unknown",
-      "filament_cutter": "unknown"
+      "filament_cutter": "unknown",
+      "printer_compatibility": "Monolith",
+      "belt_path": "Monolith coreXY"
     },
     {
       "name": "Hypernova",
@@ -405,7 +453,12 @@
       "image": "/hypernova.webp",
       "hotend_fan": "2510",
       "part_cooling_fan": "4010",
-      "filament_cutter": "unknown"
+      "filament_cutter": "unknown",
+      "printer_compatibility": [
+        "V2.4",
+        "Trident"
+      ],
+      "belt_path": "Voron coreXY"
     },
     {
       "name": "Hypernova BSE",
@@ -437,7 +490,12 @@
       "image": "/hypernova_bse.webp",
       "hotend_fan": "2510",
       "part_cooling_fan": "4010",
-      "filament_cutter": "unknown"
+      "filament_cutter": "unknown",
+      "printer_compatibility": [
+        "Switchwire",
+        "Enderwire"
+      ],
+      "belt_path": "Voron coreXZ"
     },
     {
       "name": "Jabberwocky",
@@ -452,7 +510,12 @@
       "image": "/Jabberwocky.webp",
       "hotend_fan": "2510",
       "part_cooling_fan": "3010",
-      "filament_cutter": "native"
+      "filament_cutter": "native",
+      "printer_compatibility": [
+        "V2.4",
+        "Trident"
+      ],
+      "belt_path": "Voron coreXY"
     },
     {
       "name": "Mailbox",
@@ -486,7 +549,9 @@
       "image": "",
       "hotend_fan": "3010",
       "part_cooling_fan": "5015",
-      "filament_cutter": "unknown"
+      "filament_cutter": "unknown",
+      "printer_compatibility": "V0",
+      "belt_path": "Voron coreXY"
     },
     {
       "name": "Mantis",
@@ -521,7 +586,12 @@
       "image": "/mantis.webp",
       "hotend_fan": "2510",
       "part_cooling_fan": "4010",
-      "filament_cutter": "unknown"
+      "filament_cutter": "unknown",
+      "printer_compatibility": [
+        "V2.4",
+        "Trident"
+      ],
+      "belt_path": "Voron coreXY"
     },
     {
       "name": "Micro Saul2",
@@ -538,7 +608,9 @@
       "image": "",
       "hotend_fan": "unknown",
       "part_cooling_fan": "unknown",
-      "filament_cutter": "unknown"
+      "filament_cutter": "unknown",
+      "printer_compatibility": "V0",
+      "belt_path": "Voron coreXY"
     },
     {
       "name": "Mini-Afterburner",
@@ -559,7 +631,9 @@
       "image": "",
       "hotend_fan": "3007",
       "part_cooling_fan": "3010",
-      "filament_cutter": "unknown"
+      "filament_cutter": "unknown",
+      "printer_compatibility": "V0",
+      "belt_path": "Voron coreXY"
     },
     {
       "name": "Mini-Aftersherpa",
@@ -587,7 +661,9 @@
       "image": "",
       "hotend_fan": "3007",
       "part_cooling_fan": "3010",
-      "filament_cutter": "unknown"
+      "filament_cutter": "unknown",
+      "printer_compatibility": "V0",
+      "belt_path": "Voron coreXY"
     },
     {
       "name": "Mini-Stealthburner",
@@ -610,7 +686,9 @@
       "image": "",
       "hotend_fan": "3007",
       "part_cooling_fan": "3010",
-      "filament_cutter": "unknown"
+      "filament_cutter": "unknown",
+      "printer_compatibility": "V0",
+      "belt_path": "Voron coreXY"
     },
     {
       "name": "Mini-Stealthdort",
@@ -646,7 +724,9 @@
         "3010"
       ],
       "part_cooling_fan": "3010",
-      "filament_cutter": "unknown"
+      "filament_cutter": "unknown",
+      "printer_compatibility": "V0",
+      "belt_path": "Voron coreXY"
     },
     {
       "name": "Omniburner",
@@ -669,7 +749,9 @@
       "image": "/omniburner.webp",
       "hotend_fan": "3007",
       "part_cooling_fan": "3010",
-      "filament_cutter": "unknown"
+      "filament_cutter": "unknown",
+      "printer_compatibility": "V0",
+      "belt_path": "Voron coreXY"
     },
     {
       "name": "Rapid Burner",
@@ -709,7 +791,9 @@
       "image": "/rapidburner.webp",
       "hotend_fan": "3010",
       "part_cooling_fan": "4010",
-      "filament_cutter": "unknown"
+      "filament_cutter": "unknown",
+      "printer_compatibility": "V0",
+      "belt_path": "Voron coreXY"
     },
     {
       "name": "Rainbow Dragon",
@@ -726,7 +810,9 @@
       "image": "",
       "hotend_fan": "unknown",
       "part_cooling_fan": "unknown",
-      "filament_cutter": "unknown"
+      "filament_cutter": "unknown",
+      "printer_compatibility": "V0",
+      "belt_path": "Voron coreXY"
     },
     {
       "name": "Reaper",
@@ -763,7 +849,12 @@
       "image": "/reaper.webp",
       "hotend_fan": "3010",
       "part_cooling_fan": "5015",
-      "filament_cutter": "unknown"
+      "filament_cutter": "unknown",
+      "printer_compatibility": [
+        "V2.4",
+        "Trident"
+      ],
+      "belt_path": "Voron coreXY"
     },
     {
       "name": "Rx",
@@ -780,7 +871,12 @@
       "image": "/RX.webp",
       "hotend_fan": "unknown",
       "part_cooling_fan": "unknown",
-      "filament_cutter": "unknown"
+      "filament_cutter": "unknown",
+      "printer_compatibility": [
+        "V2.4",
+        "Trident"
+      ],
+      "belt_path": "Voron coreXY"
     },
     {
       "name": "Spartacus",
@@ -797,7 +893,9 @@
       "image": "",
       "hotend_fan": "unknown",
       "part_cooling_fan": "unknown",
-      "filament_cutter": "unknown"
+      "filament_cutter": "unknown",
+      "printer_compatibility": "V0",
+      "belt_path": "Voron coreXY"
     },
     {
       "name": "Stealthburner",
@@ -829,7 +927,12 @@
       "image": "/Stealthburner.webp",
       "hotend_fan": "4010",
       "part_cooling_fan": "5015",
-      "filament_cutter": "mod"
+      "filament_cutter": "mod",
+      "printer_compatibility": [
+        "V2.4",
+        "Trident"
+      ],
+      "belt_path": "Voron coreXY"
     },
     {
       "name": "StovePipe",
@@ -859,7 +962,9 @@
       "image": "",
       "hotend_fan": "unknown",
       "part_cooling_fan": "unknown",
-      "filament_cutter": "unknown"
+      "filament_cutter": "unknown",
+      "printer_compatibility": "V0",
+      "belt_path": "Voron coreXY"
     },
     {
       "name": "Stormbreaker",
@@ -876,9 +981,11 @@
       "image": "",
       "hotend_fan": "unknown",
       "part_cooling_fan": "unknown",
-      "filament_cutter": "unknown"
+      "filament_cutter": "unknown",
+      "printer_compatibility": "Monolith",
+      "belt_path": "Monolith coreXY"
     },
-      {
+    {
       "name": "Takeoff",
       "extruders": [
         "unknown",
@@ -902,7 +1009,12 @@
       "image": "",
       "hotend_fan": "unknown",
       "part_cooling_fan": "unknown",
-      "filament_cutter": "unknown"
+      "filament_cutter": "unknown",
+      "printer_compatibility": [
+        "V2.4",
+        "Trident"
+      ],
+      "belt_path": "Voron coreXY"
     },
     {
       "name": "The Yokai",
@@ -926,7 +1038,12 @@
         "4010",
         "CPAP"
       ],
-      "filament_cutter": "unknown"
+      "filament_cutter": "unknown",
+      "printer_compatibility": [
+        "V2.4",
+        "Trident"
+      ],
+      "belt_path": "Voron coreXY"
     },
     {
       "name": "Trinity",
@@ -943,7 +1060,9 @@
       "image": "/Trinity.webp",
       "hotend_fan": "2510",
       "part_cooling_fan": "3628",
-      "filament_cutter": "unknown"
+      "filament_cutter": "unknown",
+      "printer_compatibility": "unknown",
+      "belt_path": "unknown"
     },
     {
       "name": "UAP",
@@ -960,7 +1079,9 @@
       "image": "",
       "hotend_fan": "unknown",
       "part_cooling_fan": "unknown",
-      "filament_cutter": "unknown"
+      "filament_cutter": "unknown",
+      "printer_compatibility": "Monolith",
+      "belt_path": "Monolith coreXY"
     },
     {
       "name": "V4",
@@ -977,7 +1098,13 @@
       "image": "",
       "hotend_fan": "unknown",
       "part_cooling_fan": "unknown",
-      "filament_cutter": "unknown"
+      "filament_cutter": "unknown",
+      "printer_compatibility": [
+        "V2.4",
+        "Trident",
+        "SV08"
+      ],
+      "belt_path": "Voron coreXY"
     },
     {
       "name": "V5",
@@ -994,7 +1121,13 @@
       "image": "",
       "hotend_fan": "unknown",
       "part_cooling_fan": "unknown",
-      "filament_cutter": "unknown"
+      "filament_cutter": "unknown",
+      "printer_compatibility": [
+        "V2.4",
+        "Trident",
+        "SV08"
+      ],
+      "belt_path": "Voron coreXY"
     },
     {
       "name": "Xenomorph",
@@ -1011,7 +1144,9 @@
       "image": "",
       "hotend_fan": "unknown",
       "part_cooling_fan": "unknown",
-      "filament_cutter": "unknown"
+      "filament_cutter": "unknown",
+      "printer_compatibility": "SV08",
+      "belt_path": "unknown"
     },
     {
       "name": "Xol",
@@ -1057,7 +1192,12 @@
         "4010",
         "CPAP"
       ],
-      "filament_cutter": "unknown"
+      "filament_cutter": "unknown",
+      "printer_compatibility": [
+        "V2.4",
+        "Trident"
+      ],
+      "belt_path": "Voron coreXY"
     },
     {
       "name": "Yavoth",
@@ -1089,7 +1229,9 @@
       "image": "/yavoth.webp",
       "hotend_fan": "2510",
       "part_cooling_fan": "4010",
-      "filament_cutter": "unknown"
+      "filament_cutter": "unknown",
+      "printer_compatibility": "V0",
+      "belt_path": "Voron coreXY"
     }
   ]
 }
