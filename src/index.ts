@@ -840,23 +840,42 @@ function dashboardHtml(): string {
       var items = getWorkingItems();
       var item = items[selectedIdx];
       var cur = getField(item, key) || "unknown";
-      var opts = getOptionsForKey(key);
-      var oh = "";
-      for (var i = 0; i < opts.length; i++) {
-        oh += '<option value="' + esc(opts[i]) + '"' + (opts[i] === cur ? " selected" : "") + '>' + esc(opts[i]) + '</option>';
-      }
       var meta = getFieldMeta()[key];
       var label = meta ? meta.label : key;
-      openModal(
-        '<h3>Change ' + esc(label) + '</h3>' +
-        '<select id="modalSelect" style="width:100%;">' + oh + '</select>' +
-        '<div class="row" style="margin-top:12px;"><button id="modalSave">Save</button> <button class="ghost" id="modalCancel">Cancel</button></div>'
-      );
-      document.getElementById("modalSave").addEventListener("click", function() {
-        setField(item, key, document.getElementById("modalSelect").value);
-        closeModal(); editorRender();
-      });
-      document.getElementById("modalCancel").addEventListener("click", closeModal);
+
+      function renderEnumModal() {
+        var opts = getOptionsForKey(key).slice();
+        if (cur && opts.indexOf(cur) < 0) opts = [cur].concat(opts);
+        var oh = "";
+        for (var i = 0; i < opts.length; i++) {
+          oh += '<option value="' + esc(opts[i]) + '"' + (opts[i] === cur ? " selected" : "") + '>' + esc(opts[i]) + '</option>';
+        }
+        openModal(
+          '<h3>Change ' + esc(label) + '</h3>' +
+          '<select id="modalSelect" style="width:100%;">' + oh + '</select>' +
+          '<div style="margin-top:8px;margin-bottom:12px;">' +
+          '<input id="modalCustomVal" type="text" placeholder="Or type a custom value" style="width:calc(100% - 70px);display:inline-block;" />' +
+          ' <button id="modalCustomUse" class="alt btn-sm">Use</button></div>' +
+          '<div class="row"><button id="modalSave">Save</button> <button class="ghost" id="modalCancel">Cancel</button></div>'
+        );
+        document.getElementById("modalCustomUse").addEventListener("click", function() {
+          var v = document.getElementById("modalCustomVal").value.trim();
+          if (!v) return;
+          var optKey = meta ? meta.optionsKey : null;
+          if (optKey && optKey !== "_self" && optKey !== "_self_enum" && editorData && Array.isArray(editorData[optKey]) && editorData[optKey].indexOf(v) < 0) {
+            editorData[optKey].push(v);
+            editorData[optKey].sort();
+          }
+          cur = v;
+          renderEnumModal();
+        });
+        document.getElementById("modalSave").addEventListener("click", function() {
+          setField(item, key, document.getElementById("modalSelect").value);
+          closeModal(); editorRender();
+        });
+        document.getElementById("modalCancel").addEventListener("click", closeModal);
+      }
+      renderEnumModal();
     }
 
     function editorListModify(key) {
@@ -1026,7 +1045,8 @@ function dashboardHtml(): string {
           if (!meta) continue;
           ih += '<div class="modal-item"><span>' + esc(meta.label) + ' <span class="small">(' + esc(meta.type) + ')</span></span>';
           if (key !== "name") {
-            ih += '<button class="ghost btn-sm btn-danger" data-rmfield="' + esc(key) + '">Remove</button>';
+            ih += '<button class="ghost btn-sm" data-chgtype="' + esc(key) + '">Type</button>';
+            ih += ' <button class="ghost btn-sm btn-danger" data-rmfield="' + esc(key) + '">Remove</button>';
           }
           ih += '</div>';
         }
@@ -1046,6 +1066,47 @@ function dashboardHtml(): string {
         ih += '</div>';
         ih += '<div class="row" style="margin-top:12px;"><button id="modalDone">Done</button></div>';
         openModal(ih);
+
+        document.querySelectorAll("[data-chgtype]").forEach(function(b) {
+          b.addEventListener("click", function() {
+            var fk = b.getAttribute("data-chgtype");
+            var curMeta = fieldMeta[fk];
+            var typeOpts = ["edit", "toggle", "modify", "change", "image"];
+            var so = typeOpts.map(function(t) {
+              return '<option value="' + t + '"' + (t === curMeta.type ? " selected" : "") + '>' + t + '</option>';
+            }).join("");
+            openModal(
+              '<h3>Change Type: ' + esc(curMeta.label) + '</h3>' +
+              '<label>New Type</label>' +
+              '<select id="chgTypeSelect" style="width:100%;margin-bottom:12px;">' + so + '</select>' +
+              '<div class="row"><button id="chgTypeSave">Save</button> <button class="ghost" id="chgTypeCancel">Cancel</button></div>'
+            );
+            document.getElementById("chgTypeSave").addEventListener("click", function() {
+              var newType = document.getElementById("chgTypeSelect").value;
+              if (newType !== curMeta.type) {
+                curMeta.type = newType;
+                if (newType === "modify") {
+                  if (!curMeta.optionsKey || curMeta.optionsKey === "_self_enum") curMeta.optionsKey = "_self";
+                } else if (newType === "change") {
+                  if (!curMeta.optionsKey || curMeta.optionsKey === "_self") curMeta.optionsKey = "_self_enum";
+                } else {
+                  delete curMeta.optionsKey;
+                }
+                var defaultVal: string | boolean = "";
+                if (newType === "toggle") defaultVal = false;
+                else if (newType === "modify" || newType === "change") defaultVal = "unknown";
+                for (var x = 0; x < items.length; x++) {
+                  if (newType === "toggle" && typeof items[x][fk] !== "boolean") items[x][fk] = defaultVal;
+                  else if ((newType === "modify" || newType === "change") && items[x][fk] == null) items[x][fk] = defaultVal;
+                  else if ((newType === "edit" || newType === "image") && typeof items[x][fk] !== "string") items[x][fk] = String(items[x][fk] == null ? "" : items[x][fk]);
+                }
+                setStatus("Field '" + fk + "' type changed to " + newType + ".", "ok");
+              }
+              renderFieldsModal();
+            });
+            document.getElementById("chgTypeCancel").addEventListener("click", renderFieldsModal);
+          });
+        });
 
         document.querySelectorAll("[data-rmfield]").forEach(function(b) {
           b.addEventListener("click", function() {
