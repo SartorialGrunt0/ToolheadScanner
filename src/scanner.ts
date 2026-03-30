@@ -50,7 +50,6 @@ const PRINTER_PATTERNS: Array<[string, string[]]> = [
   ["Switchwire", ["\\bswitchwire\\b"]],
   ["Enderwire", ["\\benderwire\\b"]],
   ["SV08", ["\\bsv08\\b", "\\bsovol\\s*sv08\\b"]],
-  ["Monolith", ["\\bmonolith\\b"]],
 ];
 
 const PRINTER_TO_BELT_PATH: Record<string, string> = {
@@ -60,8 +59,13 @@ const PRINTER_TO_BELT_PATH: Record<string, string> = {
   "Switchwire": "Voron coreXZ",
   "Enderwire": "Voron coreXZ",
   "SV08": "unknown",
-  "Monolith": "Monolith coreXY",
 };
+
+const BELT_PATH_PATTERNS: Array<[string, string[]]> = [
+  ["Monolith coreXY", ["\\bmonolith\\b"]],
+];
+
+const SCAN_FETCH_BUDGET = 33;
 
 export interface Env {
   HASH_CACHE: KVNamespace;
@@ -289,16 +293,15 @@ function githubRawReadmeUrls(githubUrl: string): string[] {
     const [, owner, repo, branch, subpath] = treeMatch;
     const prefix = subpath ? `${subpath}/` : "";
     const base = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}`;
-    return [`${base}/${prefix}README.md`, `${base}/${prefix}readme.md`];
+    return [`${base}/${prefix}README.md`];
   }
 
   const repoMatch = /github\.com\/([^/]+)\/([^/]+)$/i.exec(url);
   if (repoMatch) {
     const [, owner, repo] = repoMatch;
-    return BRANCH_CANDIDATES.flatMap((branch) => {
-      const base = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}`;
-      return [`${base}/README.md`, `${base}/readme.md`];
-    });
+    return BRANCH_CANDIDATES.map((branch) =>
+      `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/README.md`,
+    );
   }
 
   return [];
@@ -376,7 +379,17 @@ function hasNamedArray(value: unknown, key: string): boolean {
   return Array.isArray(entries);
 }
 
-export async function loadReferenceData(log: (message: string) => void, dataSourceBase?: string): Promise<ReferenceData> {
+export async function loadReferenceData(log: (message: string) => void, dataSourceBase?: string, useLocalOnly = false): Promise<ReferenceData> {
+  if (useLocalOnly) {
+    log("Using bundled seed data (local-only mode)");
+    return {
+      extruders: (extrudersSeed as { extruders: NamedEntry[] }).extruders,
+      hotends: (hotendsSeed as { hotends: NamedEntry[] }).hotends,
+      probes: (probesSeed as { probes: NamedEntry[] }).probes,
+      toolheads: (toolheadsSeed as { toolheads: ToolheadEntry[] }).toolheads,
+    };
+  }
+
   const base = dataSourceBase || DEFAULT_DATA_SOURCE_BASE;
   log(`Syncing reference data from ${base}`);
 
@@ -456,22 +469,31 @@ async function collectReadmeBlocks(
 ): Promise<{ readmeBlocks: Record<string, string>; updatedHashes: Array<[string, string]> }> {
   const readmeBlocks: Record<string, string> = {};
   const updatedHashes: Array<[string, string]> = [];
+  let fetchBudget = SCAN_FETCH_BUDGET;
 
   for (const target of scanTargets) {
     const name = target.name || "Unknown";
     const url = target.url.trim();
     const isGitHub = url.includes("github.com");
 
+    if (fetchBudget <= 0) {
+      log(`  [SKIP]  ${name}  (fetch budget exhausted)`);
+      continue;
+    }
+
     let readmeText: string | null = null;
 
     if (isGitHub) {
       for (const candidate of githubContentCandidates(url, target.source)) {
+        if (fetchBudget <= 0) break;
+        fetchBudget--;
         readmeText = await fetchText(candidate);
         if (readmeText !== null) {
           break;
         }
       }
     } else if (url.startsWith("http://") || url.startsWith("https://")) {
+      fetchBudget--;
       const rawResponse = await fetchText(url);
       if (rawResponse !== null) {
         readmeText = isHtmlContent(rawResponse) ? stripHtmlTags(rawResponse) : rawResponse;
@@ -496,6 +518,10 @@ async function collectReadmeBlocks(
 
     log(`  [OK]    ${name}${isGitHub ? "" : "  (HTML page)"}`);
     readmeBlocks[name] = readmeBlocks[name] ? `${readmeBlocks[name]}\n\n${readmeText}` : readmeText;
+  }
+
+  if (fetchBudget <= 0) {
+    log(`[WARN] Fetch budget (${SCAN_FETCH_BUDGET}) exhausted — some sources were skipped`);
   }
 
   return { readmeBlocks, updatedHashes };
@@ -647,7 +673,6 @@ function findPrinters(text: string, printerAliasMap: Record<string, string>): {
   printers: string[];
   printerSources: Record<string, string>;
 } {
-  const textLower = text.toLowerCase();
   const found = new Set<string>();
   const printers: string[] = [];
   const printerSources: Record<string, string> = {};
@@ -684,6 +709,34 @@ function findPrinters(text: string, printerAliasMap: Record<string, string>): {
   }
 
   return { printers, printerSources };
+}
+
+function findDirectBeltPaths(text: string): {
+  beltPaths: string[];
+  beltPathSources: Record<string, string>;
+} {
+  const found = new Set<string>();
+  const beltPaths: string[] = [];
+  const beltPathSources: Record<string, string> = {};
+
+  for (const [canonical, patterns] of BELT_PATH_PATTERNS) {
+    if (found.has(canonical)) continue;
+    for (const pattern of patterns) {
+      const regex = new RegExp(pattern, "ig");
+      const match = regex.exec(text);
+      if (match) {
+        found.add(canonical);
+        beltPaths.push(canonical);
+        const lineStart = text.lastIndexOf("\n", match.index - 1) + 1;
+        const rawLineEnd = text.indexOf("\n", match.index + match[0].length);
+        const lineEnd = rawLineEnd === -1 ? text.length : rawLineEnd;
+        beltPathSources[canonical] = text.slice(lineStart, lineEnd).trim();
+        break;
+      }
+    }
+  }
+
+  return { beltPaths, beltPathSources };
 }
 
 function deriveBeltPaths(printers: string[]): string[] {
@@ -875,7 +928,7 @@ export async function runScan(env: Env, options: RunOptions): Promise<ScanReport
       log("[INFO] Rechecking all READMEs");
     }
 
-    const referenceData = await loadReferenceData(log, env.TOOLHEAD_DATA_SOURCE_BASE);
+    const referenceData = await loadReferenceData(log, env.TOOLHEAD_DATA_SOURCE_BASE, true);
     const aliases = sanitizeAliases(aliasSeed);
     const extraLocations = await loadExtraLocations(env);
     const scanTargets = buildScanTargets(referenceData.toolheads, extraLocations, log);
@@ -943,7 +996,9 @@ export async function runScan(env: Env, options: RunOptions): Promise<ScanReport
         ...newPrinters,
       ])];
       const derivedBeltPaths = deriveBeltPaths(allPrinters);
-      const newBeltPaths = findNewSimple(derivedBeltPaths, toolhead.belt_path);
+      const { beltPaths: directBeltPaths, beltPathSources: directBeltSources } = findDirectBeltPaths(readmeText);
+      const allFoundBeltPaths = [...new Set([...derivedBeltPaths, ...directBeltPaths])];
+      const newBeltPaths = findNewSimple(allFoundBeltPaths, toolhead.belt_path);
 
       if (!newExtruders.length && !newHotends.length && !newProbes.length && !newBoards.length && !newHotendFans.length && !newPartCoolingFans.length && !newFilamentCutter && !newPrinters.length && !newBeltPaths.length) {
         continue;
@@ -975,7 +1030,7 @@ export async function runScan(env: Env, options: RunOptions): Promise<ScanReport
         sources[`printer::${item}`] = printerSources[item] ?? "Unknown source";
       }
       for (const item of newBeltPaths) {
-        sources[`belt_path::${item}`] = "Derived from printer compatibility";
+        sources[`belt_path::${item}`] = directBeltSources[item] ?? "Derived from printer compatibility";
       }
 
       log(`Toolhead : ${name}`);
@@ -1129,7 +1184,7 @@ export async function loadEditorData(dataSourceBase?: string): Promise<{
     fans: FAN_PATTERNS.map(([name]) => name),
     filamentCutterOptions: ["native", "mod", "unknown", "unsupported"],
     categoryOptions: ["Printers for Ants", "Full Size Printers"],
-    printerOptions: PRINTER_PATTERNS.map(([name]) => name),
+    printerOptions: PRINTER_PATTERNS.map(([name]) => name).sort(),
     beltPathOptions: [...new Set(Object.values(PRINTER_TO_BELT_PATH).filter((v) => v !== "unknown"))].sort(),
   };
 }

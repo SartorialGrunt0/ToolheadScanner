@@ -82,7 +82,7 @@
       "hotend_fan": "unknown",
       "part_cooling_fan": "unknown",
       "filament_cutter": "unknown",
-      "printer_compatibility": "Monolith",
+      "printer_compatibility": "unknown",
       "belt_path": "Monolith coreXY"
     },
     {
@@ -174,7 +174,7 @@
       "hotend_fan": "unknown",
       "part_cooling_fan": "unknown",
       "filament_cutter": "unknown",
-      "printer_compatibility": "Monolith",
+      "printer_compatibility": "unknown",
       "belt_path": "Monolith coreXY"
     },
     {
@@ -250,7 +250,7 @@
       "hotend_fan": "unknown",
       "part_cooling_fan": "unknown",
       "filament_cutter": "unknown",
-      "printer_compatibility": "Monolith",
+      "printer_compatibility": "unknown",
       "belt_path": "Monolith coreXY"
     },
     {
@@ -372,7 +372,7 @@
       "hotend_fan": "unknown",
       "part_cooling_fan": "unknown",
       "filament_cutter": "unknown",
-      "printer_compatibility": "Monolith",
+      "printer_compatibility": "unknown",
       "belt_path": "Monolith coreXY"
     },
     {
@@ -391,7 +391,7 @@
       "hotend_fan": "unknown",
       "part_cooling_fan": "unknown",
       "filament_cutter": "unknown",
-      "printer_compatibility": "Monolith",
+      "printer_compatibility": "unknown",
       "belt_path": "Monolith coreXY"
     },
     {
@@ -417,7 +417,7 @@
       "hotend_fan": "unknown",
       "part_cooling_fan": "unknown",
       "filament_cutter": "unknown",
-      "printer_compatibility": "Monolith",
+      "printer_compatibility": "unknown",
       "belt_path": "Monolith coreXY"
     },
     {
@@ -982,7 +982,7 @@
       "hotend_fan": "unknown",
       "part_cooling_fan": "unknown",
       "filament_cutter": "unknown",
-      "printer_compatibility": "Monolith",
+      "printer_compatibility": "unknown",
       "belt_path": "Monolith coreXY"
     },
     {
@@ -1080,7 +1080,7 @@
       "hotend_fan": "unknown",
       "part_cooling_fan": "unknown",
       "filament_cutter": "unknown",
-      "printer_compatibility": "Monolith",
+      "printer_compatibility": "unknown",
       "belt_path": "Monolith coreXY"
     },
     {
