@@ -5,6 +5,7 @@ import {
   loadExtraLocations,
   removeExtraLocation,
   runScan,
+  scanSingleToolhead,
   saveExtraLocations,
   type Env,
   type ExtraLocation,
@@ -346,6 +347,7 @@ function dashboardHtml(): string {
           <button id="editorNewBtn">+ New</button>
           <button id="editorFieldsBtn" class="ghost">Manage Fields</button>
           <button id="editorLoadBtn" class="alt">Load Data</button>
+          <button id="editorScanBtn" class="ghost" disabled>Scan Toolhead</button>
           <button id="editorPRBtn" class="ghost" disabled>Create Pull Request</button>
         </div>
         <div id="editorDetail"><p class="small">Click "Load Data" to fetch the current reference data.</p></div>
@@ -732,9 +734,11 @@ function dashboardHtml(): string {
       if (selectedIdx < 0 || selectedIdx >= items.length) {
         c.innerHTML = '<p class="small">Select an item or click "+ New" to create one.</p>';
         document.getElementById("editorPRBtn").disabled = true;
+        document.getElementById("editorScanBtn").disabled = true;
         return;
       }
       document.getElementById("editorPRBtn").disabled = false;
+      document.getElementById("editorScanBtn").disabled = !(currentCategory === "toolheads" && items[selectedIdx] && items[selectedIdx].url);
       var item = items[selectedIdx];
       var fieldMeta = getFieldMeta();
       var fieldOrder = getFieldOrder();
@@ -1161,6 +1165,62 @@ function dashboardHtml(): string {
       renderFieldsModal();
     }
 
+    async function editorScanToolhead() {
+      if (currentCategory !== "toolheads" || selectedIdx < 0) return;
+      var items = getWorkingItems();
+      var item = items[selectedIdx];
+      if (!item || !item.url) {
+        setStatus("No URL set for this toolhead.", "error");
+        return;
+      }
+      setStatus("Scanning " + item.name + "...", null);
+      document.getElementById("editorScanBtn").disabled = true;
+      try {
+        var result = await requestJson("/api/scan-toolhead", {
+          method: "POST",
+          headers: authHeaders(true),
+          body: JSON.stringify({ url: item.url })
+        });
+        var fieldMap = [
+          ["extruders", "extruders"],
+          ["hotend", "hotends"],
+          ["probe", "probes"],
+          ["boards", "boards"],
+          ["hotend_fan", "hotend_fans"],
+          ["part_cooling_fan", "part_cooling_fans"],
+          ["printer_compatibility", "printer_compatibility"],
+          ["belt_path", "belt_path"]
+        ];
+        for (var i = 0; i < fieldMap.length; i++) {
+          var itemKey = fieldMap[i][0];
+          var resultKey = fieldMap[i][1];
+          var arr = result[resultKey];
+          if (arr && arr.length > 0) {
+            setField(item, itemKey, arr.length === 1 ? arr[0] : arr);
+          }
+        }
+        if (result.filament_cutter) {
+          setField(item, "filament_cutter", result.filament_cutter);
+        }
+        editorRender();
+        var found = [];
+        if (result.extruders.length) found.push(result.extruders.length + " extruder(s)");
+        if (result.hotends.length) found.push(result.hotends.length + " hotend(s)");
+        if (result.probes.length) found.push(result.probes.length + " probe(s)");
+        if (result.boards.length) found.push(result.boards.length + " board(s)");
+        if (result.hotend_fans.length) found.push(result.hotend_fans.length + " hotend fan(s)");
+        if (result.part_cooling_fans.length) found.push(result.part_cooling_fans.length + " part cooling fan(s)");
+        if (result.filament_cutter) found.push("filament cutter");
+        if (result.printer_compatibility.length) found.push(result.printer_compatibility.length + " printer(s)");
+        if (result.belt_path.length) found.push(result.belt_path.length + " belt path(s)");
+        setStatus("Scan complete: " + (found.length ? found.join(", ") : "no components found") + ".", found.length ? "ok" : "error");
+      } catch (err) {
+        setStatus("Scan failed: " + err.message, "error");
+      } finally {
+        document.getElementById("editorScanBtn").disabled = false;
+      }
+    }
+
     async function editorCreatePR() {
       if (!workingData.toolheads.length && !workingData.extruders.length && !workingData.hotends.length && !workingData.probes.length) return;
       setStatus("Creating pull request...", null);
@@ -1219,6 +1279,7 @@ function dashboardHtml(): string {
     document.getElementById("editorNewBtn").addEventListener("click", editorNewItem);
     document.getElementById("editorFieldsBtn").addEventListener("click", editorManageFields);
     document.getElementById("editorLoadBtn").addEventListener("click", editorLoad);
+    document.getElementById("editorScanBtn").addEventListener("click", editorScanToolhead);
     document.getElementById("editorPRBtn").addEventListener("click", editorCreatePR);
     document.getElementById("modalOverlay").addEventListener("click", function(e) {
       if (e.target === this) closeModal();
@@ -1553,6 +1614,7 @@ export default {
         "POST /extra-locations       Add one extra location",
         "DELETE /extra-locations     Remove one extra location",
         "GET  /api/reference-data    Fetch reference data for editor (toolheads, extruders, hotends, probes)",
+        "POST /api/scan-toolhead     Scan a single toolhead URL and return found components",
         "POST /api/create-pr         Create a GitHub PR with data changes",
       ].join("\n"));
     }
@@ -1598,6 +1660,22 @@ export default {
       }
 
       return await handleReferenceData(env);
+    }
+
+    if (url.pathname === "/api/scan-toolhead" && request.method === "POST") {
+      const authError = requireAuthorization(request, env);
+      if (authError) {
+        return authError;
+      }
+
+      const body = (await request.json()) as { url?: string };
+      const targetUrl = String(body.url ?? "").trim();
+      if (!targetUrl) {
+        return jsonResponse({ error: "url is required." }, 400);
+      }
+
+      const result = await scanSingleToolhead(targetUrl);
+      return jsonResponse(result);
     }
 
     if (url.pathname === "/api/create-pr" && request.method === "POST") {

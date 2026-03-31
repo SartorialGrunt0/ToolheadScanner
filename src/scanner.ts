@@ -1188,3 +1188,94 @@ export async function loadEditorData(dataSourceBase?: string): Promise<{
     beltPathOptions: [...new Set(Object.values(PRINTER_TO_BELT_PATH).filter((v) => v !== "unknown"))].sort(),
   };
 }
+
+export interface SingleScanResult {
+  extruders: string[];
+  hotends: string[];
+  probes: string[];
+  boards: string[];
+  hotend_fans: string[];
+  part_cooling_fans: string[];
+  filament_cutter: string | null;
+  printer_compatibility: string[];
+  belt_path: string[];
+  sources: Record<string, string>;
+}
+
+export async function scanSingleToolhead(url: string): Promise<SingleScanResult> {
+  const ref = await loadReferenceData(() => {}, undefined, true);
+  const aliases = sanitizeAliases(aliasSeed);
+
+  const trimmedUrl = url.trim();
+  const isGitHub = trimmedUrl.includes("github.com");
+  let readmeText: string | null = null;
+
+  if (isGitHub) {
+    const dummyTarget: ScanTarget = { name: "", url: trimmedUrl, source: "toolheads.json" };
+    for (const candidate of githubContentCandidates(trimmedUrl, dummyTarget.source)) {
+      readmeText = await fetchText(candidate);
+      if (readmeText !== null) break;
+    }
+  } else if (trimmedUrl.startsWith("http://") || trimmedUrl.startsWith("https://")) {
+    const rawResponse = await fetchText(trimmedUrl);
+    if (rawResponse !== null) {
+      readmeText = isHtmlContent(rawResponse) ? stripHtmlTags(rawResponse) : rawResponse;
+    }
+  }
+
+  if (readmeText === null) {
+    return {
+      extruders: [], hotends: [], probes: [], boards: [],
+      hotend_fans: [], part_cooling_fans: [],
+      filament_cutter: null, printer_compatibility: [], belt_path: [],
+      sources: {},
+    };
+  }
+
+  const extruderTable = buildSearchTable(ref.extruders.map((e) => e.name), aliases.extruders);
+  const hotendTable = buildSearchTable(ref.hotends.map((e) => e.name), aliases.hotends);
+  const probeTable = buildSearchTable(ref.probes.map((e) => e.name), aliases.probes);
+  const boardTable = buildBoardSearchTable(aliases.boards);
+
+  const { foundNames: foundExtruders, foundSources: extruderSources } = findMatches(readmeText, extruderTable);
+  const { foundNames: foundHotends, foundSources: hotendSources } = findMatches(readmeText, hotendTable);
+  const { foundNames: foundProbes, foundSources: probeSources } = findMatches(readmeText, probeTable);
+  const { foundNames: foundBoards, foundSources: boardSources } = findMatches(readmeText, boardTable);
+  const { hotendFans, partCoolingFans, hotendSources: hotendFanSources, partCoolingSources } = findFans(readmeText);
+  const filamentCutterSource = findFilamentCutterSource(readmeText);
+
+  const filteredExtruders = foundExtruders.filter((e) => e.toLowerCase() !== "bmg");
+  const filteredBoards = foundBoards.filter((e) => e.toLowerCase() !== "bmg");
+
+  const normalizedExtruders = filteredExtruders.map((e) => (e === "HextrudORT" ? "Vz HextrudORT" : e));
+  const dedupedExtruders = normalizedExtruders.filter((e, i) => normalizedExtruders.indexOf(e) === i);
+
+  const { printers, printerSources } = findPrinters(readmeText, aliases.printers);
+  const derivedBeltPaths = deriveBeltPaths(printers);
+  const { beltPaths: directBeltPaths, beltPathSources: directBeltSources } = findDirectBeltPaths(readmeText);
+  const allBeltPaths = [...new Set([...derivedBeltPaths, ...directBeltPaths])];
+
+  const sources: Record<string, string> = {};
+  for (const item of dedupedExtruders) sources[item] = extruderSources[item === "Vz HextrudORT" ? "HextrudORT" : item] ?? extruderSources[item] ?? "";
+  for (const item of foundHotends) sources[item] = hotendSources[item] ?? "";
+  for (const item of foundProbes) sources[item] = probeSources[item] ?? "";
+  for (const item of filteredBoards) sources[item] = boardSources[item] ?? "";
+  for (const item of hotendFans) sources[`hotend_fan::${item}`] = hotendFanSources[item] ?? "";
+  for (const item of partCoolingFans) sources[`part_cooling_fan::${item}`] = partCoolingSources[item] ?? "";
+  if (filamentCutterSource) sources.filament_cutter = filamentCutterSource;
+  for (const item of printers) sources[`printer::${item}`] = printerSources[item] ?? "";
+  for (const item of allBeltPaths) sources[`belt_path::${item}`] = directBeltSources[item] ?? "Derived from printer compatibility";
+
+  return {
+    extruders: dedupedExtruders,
+    hotends: foundHotends,
+    probes: foundProbes,
+    boards: filteredBoards,
+    hotend_fans: hotendFans,
+    part_cooling_fans: partCoolingFans,
+    filament_cutter: filamentCutterSource ? "supported" : null,
+    printer_compatibility: printers,
+    belt_path: allBeltPaths,
+    sources,
+  };
+}
