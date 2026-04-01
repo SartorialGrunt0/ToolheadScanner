@@ -573,6 +573,7 @@ function dashboardHtml(): string {
         name: { type: "edit", label: "Name" },
         title: { type: "edit", label: "Title" },
         url: { type: "edit", label: "URL" },
+        build_guide: { type: "edit", label: "Build Guide" },
         description: { type: "edit", label: "Description" },
         category: { type: "change", label: "Category", optionsKey: "categoryOptions" },
         image: { type: "image", label: "Image" },
@@ -618,7 +619,7 @@ function dashboardHtml(): string {
     };
 
     var CATEGORY_FIELD_ORDER = {
-      toolheads: ["name", "title", "url", "description", "category", "image", "configurator",
+      toolheads: ["name", "title", "url", "build_guide", "description", "category", "image", "configurator",
         "extruders", "hotend", "probe", "boards", "hotend_fan", "part_cooling_fan", "filament_cutter",
         "printer_compatibility", "belt_path"],
       extruders: ["name", "mounting_pattern", "gear_type", "url", "description", "filament_sensor", "top_pick"],

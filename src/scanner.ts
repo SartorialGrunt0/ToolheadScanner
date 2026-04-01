@@ -1185,7 +1185,7 @@ export async function loadEditorData(dataSourceBase?: string): Promise<{
     filamentCutterOptions: ["native", "mod", "unknown", "unsupported"],
     categoryOptions: ["Printers for Ants", "Full Size Printers"],
     printerOptions: PRINTER_PATTERNS.map(([name]) => name).sort(),
-    beltPathOptions: [...new Set(Object.values(PRINTER_TO_BELT_PATH).filter((v) => v !== "unknown"))].sort(),
+    beltPathOptions: [...new Set([...Object.values(PRINTER_TO_BELT_PATH).filter((v) => v !== "unknown"), ...BELT_PATH_PATTERNS.map(([name]) => name)])].sort(),
   };
 }
 
