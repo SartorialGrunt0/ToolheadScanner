@@ -1,10 +1,14 @@
 import {
+  addBlacklistEntry,
   addExtraLocation,
   buildEmailBodies,
+  loadBlacklist,
   loadEditorData,
   loadExtraLocations,
+  removeBlacklistEntry,
   removeExtraLocation,
   runScan,
+  saveBlacklist,
   scanSingleToolhead,
   saveExtraLocations,
   type Env,
@@ -283,7 +287,7 @@ function dashboardHtml(): string {
   <div class="wrap">
     <section class="hero">
       <h1>ToolheadScanner Dashboard</h1>
-      <p class="muted">Run scans, inspect last cron/manual result, and manage extra GitHub locations.</p>
+      <p class="muted">Run scans, inspect last cron/manual result, manage extra GitHub locations, and configure the toolhead blacklist.</p>
       <div>
         <label for="token">Manual Run Token (Bearer)</label>
         <div class="row">
@@ -329,6 +333,20 @@ function dashboardHtml(): string {
           <button class="ghost" id="refreshLocations">Refresh List</button>
         </div>
         <div id="locations" class="list"></div>
+      </section>
+
+      <section class="card">
+        <h2>Toolhead Blacklist</h2>
+        <p class="small" style="margin-top:0;">Blacklisted toolheads will be skipped during scans.</p>
+        <div>
+          <label for="blacklistToolhead">Toolhead Name</label>
+          <input id="blacklistToolhead" type="text" placeholder="ToolheadName" />
+        </div>
+        <div class="row" style="margin-top: 10px;">
+          <button id="addBlacklist">Add to Blacklist</button>
+          <button class="ghost" id="refreshBlacklist">Refresh List</button>
+        </div>
+        <div id="blacklistItems" class="list"></div>
       </section>
     </div>
     </div>
@@ -560,6 +578,81 @@ function dashboardHtml(): string {
 
     document.getElementById("addLocation").addEventListener("click", addLocation);
     document.getElementById("refreshLocations").addEventListener("click", loadLocations);
+
+    // --- Blacklist ---
+    const blacklistItemsEl = document.getElementById("blacklistItems");
+    const blacklistToolheadEl = document.getElementById("blacklistToolhead");
+
+    async function loadBlacklist() {
+      try {
+        const data = await requestJson("/blacklist", { method: "GET", headers: authHeaders(false) });
+        const items = Array.isArray(data.blacklist) ? data.blacklist : [];
+        if (!items.length) {
+          blacklistItemsEl.innerHTML = "<p class='small'>No toolheads blacklisted.</p>";
+          return;
+        }
+
+        blacklistItemsEl.innerHTML = "";
+        for (const name of items) {
+          const row = document.createElement("div");
+          row.className = "item";
+
+          const left = document.createElement("div");
+          left.className = "item-main";
+          left.textContent = name;
+          left.style.fontWeight = "600";
+
+          const del = document.createElement("button");
+          del.className = "ghost";
+          del.textContent = "Remove";
+          del.addEventListener("click", async () => {
+            setStatus("Removing from blacklist...", null);
+            try {
+              await requestJson("/blacklist", {
+                method: "DELETE",
+                headers: authHeaders(true),
+                body: JSON.stringify({ toolhead: name }),
+              });
+              setStatus("Removed from blacklist.", "ok");
+              await loadBlacklist();
+            } catch (error) {
+              setStatus("Remove failed: " + error.message, "error");
+            }
+          });
+
+          row.appendChild(left);
+          row.appendChild(del);
+          blacklistItemsEl.appendChild(row);
+        }
+      } catch (error) {
+        setStatus("Failed to load blacklist: " + error.message, "error");
+      }
+    }
+
+    async function addToBlacklist() {
+      const toolhead = blacklistToolheadEl.value.trim();
+      if (!toolhead) {
+        setStatus("Toolhead name is required.", "error");
+        return;
+      }
+
+      setStatus("Adding to blacklist...", null);
+      try {
+        await requestJson("/blacklist", {
+          method: "POST",
+          headers: authHeaders(true),
+          body: JSON.stringify({ toolhead }),
+        });
+        blacklistToolheadEl.value = "";
+        setStatus("Added to blacklist.", "ok");
+        await loadBlacklist();
+      } catch (error) {
+        setStatus("Add failed: " + error.message, "error");
+      }
+    }
+
+    document.getElementById("addBlacklist").addEventListener("click", addToBlacklist);
+    document.getElementById("refreshBlacklist").addEventListener("click", loadBlacklist);
 
     // --- Data Editor ---
     var editorData = null;
@@ -1287,6 +1380,7 @@ function dashboardHtml(): string {
     });
 
     loadLocations();
+    loadBlacklist();
     loadLastRun();
   </script>
 </body>
@@ -1412,6 +1506,31 @@ async function handleExtraLocations(request: Request, env: Env): Promise<Respons
   if (request.method === "PUT") {
     await saveExtraLocations(env, payload.extra_locations ?? []);
     return jsonResponse({ extra_locations: await loadExtraLocations(env) });
+  }
+
+  return jsonResponse({ error: "Method not allowed." }, 405);
+}
+
+async function handleBlacklist(request: Request, env: Env): Promise<Response> {
+  if (request.method === "GET") {
+    return jsonResponse({ blacklist: await loadBlacklist(env) });
+  }
+
+  const payload = (await request.json()) as { toolhead?: string; blacklist?: string[] };
+
+  if (request.method === "POST") {
+    const added = await addBlacklistEntry(env, String(payload.toolhead ?? ""));
+    return jsonResponse({ added, blacklist: await loadBlacklist(env) }, added ? 201 : 200);
+  }
+
+  if (request.method === "DELETE") {
+    const removed = await removeBlacklistEntry(env, String(payload.toolhead ?? ""));
+    return jsonResponse({ removed, blacklist: await loadBlacklist(env) });
+  }
+
+  if (request.method === "PUT") {
+    await saveBlacklist(env, payload.blacklist ?? []);
+    return jsonResponse({ blacklist: await loadBlacklist(env) });
   }
 
   return jsonResponse({ error: "Method not allowed." }, 405);
@@ -1614,6 +1733,9 @@ export default {
         "GET  /extra-locations       List KV-backed extra GitHub locations",
         "POST /extra-locations       Add one extra location",
         "DELETE /extra-locations     Remove one extra location",
+        "GET  /blacklist             List blacklisted toolheads",
+        "POST /blacklist             Add a toolhead to the blacklist",
+        "DELETE /blacklist           Remove a toolhead from the blacklist",
         "GET  /api/reference-data    Fetch reference data for editor (toolheads, extruders, hotends, probes)",
         "POST /api/scan-toolhead     Scan a single toolhead URL and return found components",
         "POST /api/create-pr         Create a GitHub PR with data changes",
@@ -1652,6 +1774,15 @@ export default {
       }
 
       return await handleExtraLocations(request, env);
+    }
+
+    if (url.pathname === "/blacklist") {
+      const authError = requireAuthorization(request, env);
+      if (authError) {
+        return authError;
+      }
+
+      return await handleBlacklist(request, env);
     }
 
     if (url.pathname === "/api/reference-data" && request.method === "GET") {

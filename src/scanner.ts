@@ -285,6 +285,72 @@ function dedupeExtraLocations(entries: ExtraLocation[]): ExtraLocation[] {
   });
 }
 
+/* ── Toolhead Blacklist ─────────────────────────────────────────────── */
+
+function cleanBlacklist(entries: unknown): string[] {
+  if (!Array.isArray(entries)) {
+    return [];
+  }
+  return entries
+    .map((e) => (typeof e === "string" ? e.trim() : ""))
+    .filter((e) => e.length > 0);
+}
+
+function dedupeBlacklist(entries: string[]): string[] {
+  const seen = new Set<string>();
+  return entries.filter((e) => {
+    const key = e.toLowerCase();
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+}
+
+export async function loadBlacklist(env: Env): Promise<string[]> {
+  const stored = await env.SCANNER_STATE.get("blacklist", "json");
+  if (stored && typeof stored === "object") {
+    const items = cleanBlacklist((stored as { blacklist?: unknown }).blacklist);
+    if (items.length > 0) {
+      return items;
+    }
+  }
+  return [];
+}
+
+export async function saveBlacklist(env: Env, entries: string[]): Promise<void> {
+  const deduped = dedupeBlacklist(cleanBlacklist(entries));
+  await env.SCANNER_STATE.put("blacklist", JSON.stringify({ blacklist: deduped }, null, 2));
+}
+
+export async function addBlacklistEntry(env: Env, toolhead: string): Promise<boolean> {
+  const normalized = toolhead.trim();
+  if (!normalized) {
+    throw new Error("Toolhead name is required.");
+  }
+
+  const existing = await loadBlacklist(env);
+  if (existing.some((e) => e.toLowerCase() === normalized.toLowerCase())) {
+    return false;
+  }
+
+  existing.push(normalized);
+  await saveBlacklist(env, existing);
+  return true;
+}
+
+export async function removeBlacklistEntry(env: Env, toolhead: string): Promise<boolean> {
+  const existing = await loadBlacklist(env);
+  const filtered = existing.filter((e) => e.toLowerCase() !== toolhead.trim().toLowerCase());
+  if (filtered.length === existing.length) {
+    return false;
+  }
+
+  await saveBlacklist(env, filtered);
+  return true;
+}
+
 function githubRawReadmeUrls(githubUrl: string): string[] {
   const url = githubUrl.replace(/\/$/, "").replace(/\.git$/, "");
 
@@ -416,21 +482,30 @@ export async function loadReferenceData(log: (message: string) => void, dataSour
   };
 }
 
-function buildScanTargets(toolheads: ToolheadEntry[], extraLocations: ExtraLocation[], log: (message: string) => void): ScanTarget[] {
-  const targets: ScanTarget[] = toolheads.map((toolhead) => ({
-    name: toolhead.name,
-    url: String(toolhead.url ?? "").trim(),
-    source: "toolheads.json",
-  }));
+function buildScanTargets(toolheads: ToolheadEntry[], extraLocations: ExtraLocation[], blacklist: string[], log: (message: string) => void): ScanTarget[] {
+  const blacklistSet = new Set(blacklist.map((e) => e.toLowerCase()));
+
+  const targets: ScanTarget[] = toolheads
+    .filter((toolhead) => !blacklistSet.has(toolhead.name.toLowerCase()))
+    .map((toolhead) => ({
+      name: toolhead.name,
+      url: String(toolhead.url ?? "").trim(),
+      source: "toolheads.json",
+    }));
 
   for (const entry of extraLocations) {
-    targets.push({
-      name: entry.toolhead,
-      url: entry.url,
-      source: "extra_github_locations.json",
-    });
+    if (!blacklistSet.has(entry.toolhead.toLowerCase())) {
+      targets.push({
+        name: entry.toolhead,
+        url: entry.url,
+        source: "extra_github_locations.json",
+      });
+    }
   }
 
+  if (blacklist.length > 0) {
+    log(`Blacklist: skipping ${blacklist.length} toolhead(s): ${blacklist.join(", ")}`);
+  }
   if (extraLocations.length > 0) {
     log(`Loaded ${extraLocations.length} extra GitHub location(s)`);
   }
@@ -931,7 +1006,8 @@ export async function runScan(env: Env, options: RunOptions): Promise<ScanReport
     const referenceData = await loadReferenceData(log, env.TOOLHEAD_DATA_SOURCE_BASE, true);
     const aliases = sanitizeAliases(aliasSeed);
     const extraLocations = await loadExtraLocations(env);
-    const scanTargets = buildScanTargets(referenceData.toolheads, extraLocations, log);
+    const blacklist = await loadBlacklist(env);
+    const scanTargets = buildScanTargets(referenceData.toolheads, extraLocations, blacklist, log);
     const toolheadMap = new Map(referenceData.toolheads.map((toolhead) => [toolhead.name, toolhead]));
 
     log(`Downloading READMEs for ${scanTargets.length} source location(s) ...`);
