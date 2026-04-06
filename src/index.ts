@@ -339,8 +339,8 @@ function dashboardHtml(): string {
         <h2>Toolhead Blacklist</h2>
         <p class="small" style="margin-top:0;">Blacklisted toolheads will be skipped during scans.</p>
         <div>
-          <label for="blacklistToolhead">Toolhead Name</label>
-          <input id="blacklistToolhead" type="text" placeholder="ToolheadName" />
+          <label for="blacklistToolhead">Select Toolhead</label>
+          <select id="blacklistToolhead"><option value="">-- Select toolhead --</option></select>
         </div>
         <div class="row" style="margin-top: 10px;">
           <button id="addBlacklist">Add to Blacklist</button>
@@ -582,11 +582,44 @@ function dashboardHtml(): string {
     // --- Blacklist ---
     const blacklistItemsEl = document.getElementById("blacklistItems");
     const blacklistToolheadEl = document.getElementById("blacklistToolhead");
+    var allToolheadNames = [];
+
+    async function fetchToolheadNames() {
+      try {
+        const data = await requestJson("/api/reference-data", { method: "GET", headers: authHeaders(false) });
+        allToolheadNames = (data.toolheads || []).map(function(t) { return t.name; }).sort(function(a, b) {
+          return a.localeCompare(b);
+        });
+      } catch {
+        allToolheadNames = [];
+      }
+    }
+
+    function populateBlacklistSelect(blacklisted) {
+      var set = {};
+      for (var i = 0; i < blacklisted.length; i++) {
+        set[blacklisted[i].toLowerCase()] = true;
+      }
+      blacklistToolheadEl.innerHTML = '<option value="">-- Select toolhead --</option>';
+      for (var j = 0; j < allToolheadNames.length; j++) {
+        var name = allToolheadNames[j];
+        if (!set[name.toLowerCase()]) {
+          var o = document.createElement("option");
+          o.value = name;
+          o.textContent = name;
+          blacklistToolheadEl.appendChild(o);
+        }
+      }
+    }
 
     async function loadBlacklist() {
       try {
+        if (!allToolheadNames.length) {
+          await fetchToolheadNames();
+        }
         const data = await requestJson("/blacklist", { method: "GET", headers: authHeaders(false) });
         const items = Array.isArray(data.blacklist) ? data.blacklist : [];
+        populateBlacklistSelect(items);
         if (!items.length) {
           blacklistItemsEl.innerHTML = "<p class='small'>No toolheads blacklisted.</p>";
           return;
@@ -630,9 +663,9 @@ function dashboardHtml(): string {
     }
 
     async function addToBlacklist() {
-      const toolhead = blacklistToolheadEl.value.trim();
+      const toolhead = blacklistToolheadEl.value;
       if (!toolhead) {
-        setStatus("Toolhead name is required.", "error");
+        setStatus("Select a toolhead first.", "error");
         return;
       }
 
@@ -643,7 +676,6 @@ function dashboardHtml(): string {
           headers: authHeaders(true),
           body: JSON.stringify({ toolhead }),
         });
-        blacklistToolheadEl.value = "";
         setStatus("Added to blacklist.", "ok");
         await loadBlacklist();
       } catch (error) {
