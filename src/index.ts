@@ -1472,9 +1472,23 @@ async function runAndPersist(env: Env, trigger: string, recheck = false): Promis
   if (report.ok && report.changed && report.updatedPayload.toolheads.length > 0 && env.GITHUB_TOKEN?.trim()) {
     try {
       const changedNames = report.results.map((r) => r.name).join(", ");
+
+      // Build PR body with per-toolhead source evidence so reviewers can see
+      // where each newly-found item came from without it polluting the JSON.
+      let prBody = `Automated scan update from ToolheadScanner.\n\nUpdated toolhead(s): ${changedNames}\n`;
+      for (const result of report.results) {
+        if (Object.keys(result.sources).length > 0) {
+          prBody += `\n### ${result.name}\n`;
+          for (const [key, source] of Object.entries(result.sources)) {
+            prBody += `- **${key}**: ${source}\n`;
+          }
+        }
+      }
+
       const prResult = await createDataPR(env, {
         toolheads: report.updatedPayload.toolheads,
         message: `ToolheadScanner: update ${report.changeCount} toolhead(s) — ${changedNames}`,
+        body: prBody,
       });
       report.logs.push(`PR created: ${prResult.pr_url}`);
     } catch (error) {
@@ -1547,6 +1561,7 @@ interface DataPRPayload {
   hotends?: NamedEntry[];
   probes?: NamedEntry[];
   message?: string;
+  body?: string;
   images?: Array<{ filename: string; content: string }>;
 }
 
@@ -1695,7 +1710,7 @@ async function createDataPR(
       title: commitMessage,
       head: `${forkOwner}:${branchName}`,
       base: "main",
-      body: `Automated update from ToolheadScanner Dashboard.\n\nUpdated files: ${changedFiles.join(", ")}`,
+      body: payload.body ?? `Automated update from ToolheadScanner Dashboard.\n\nUpdated files: ${changedFiles.join(", ")}`,
     }),
   });
 
