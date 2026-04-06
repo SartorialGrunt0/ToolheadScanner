@@ -928,7 +928,7 @@ export async function runScan(env: Env, options: RunOptions): Promise<ScanReport
       log("[INFO] Rechecking all READMEs");
     }
 
-    const referenceData = await loadReferenceData(log, env.TOOLHEAD_DATA_SOURCE_BASE, true);
+    const referenceData = await loadReferenceData(log, env.TOOLHEAD_DATA_SOURCE_BASE);
     const aliases = sanitizeAliases(aliasSeed);
     const extraLocations = await loadExtraLocations(env);
     const scanTargets = buildScanTargets(referenceData.toolheads, extraLocations, log);
@@ -1082,8 +1082,6 @@ export async function runScan(env: Env, options: RunOptions): Promise<ScanReport
       if (newBeltPaths.length) {
         updated.belt_path = mergeField(toolhead.belt_path, newBeltPaths);
       }
-      updated._new_item_sources = sources;
-
       updatesNeeded.push(updated);
       results.push({
         name,
@@ -1116,6 +1114,16 @@ export async function runScan(env: Env, options: RunOptions): Promise<ScanReport
       log("No Updates Needed");
     }
 
+    // Build full merged toolheads list: all toolheads from ToolheadBuilder with
+    // updated entries replacing their corresponding originals, and any internal
+    // metadata fields (_new_item_sources) stripped from every entry.
+    const updatesMap = new Map(updatesNeeded.map((t) => [t.name, t]));
+    const mergedToolheads = referenceData.toolheads.map((t) => {
+      const entry = updatesMap.get(t.name) ?? t;
+      const { _new_item_sources: _, ...clean } = entry as Record<string, unknown>;
+      return clean as ToolheadEntry;
+    });
+
     return {
       ok: true,
       trigger: options.trigger,
@@ -1126,7 +1134,7 @@ export async function runScan(env: Env, options: RunOptions): Promise<ScanReport
       changeCount: updatesNeeded.length,
       summary,
       results,
-      updatedPayload: { toolheads: updatesNeeded },
+      updatedPayload: { toolheads: mergedToolheads },
       logs,
     };
   } catch (error) {
